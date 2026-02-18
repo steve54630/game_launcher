@@ -1,7 +1,11 @@
 import 'package:game_launcher/domain/entities/settings.entity.dart';
 
 class SettingsModel extends AppSettings {
-  SettingsModel({super.minimizeOnLaunch, super.closeOnExit, super.themeMode});
+  SettingsModel({
+    required super.minimizeOnLaunch,
+    required super.closeOnExit,
+    required super.themeMode,
+  });
 
   /// Transforme une liste de lignes SQLite [ {key: '...', value: '...'}, ... ]
   /// en un objet AppSettings structuré.

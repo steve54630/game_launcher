@@ -8,6 +8,12 @@ import '../models/settings.model.dart';
 class AppSettingsRepositoryImpl implements AppSettingsRepository {
   final DatabaseHelper dbHelper;
 
+  static const _settingsKeys = [
+    'minimize_on_launch',
+    'close_on_exit',
+    'theme_mode',
+  ];
+
   AppSettingsRepositoryImpl(this.dbHelper);
 
   @override
@@ -15,25 +21,20 @@ class AppSettingsRepositoryImpl implements AppSettingsRepository {
     try {
       final db = await dbHelper.database;
 
-      // On récupère uniquement les clés qui concernent AppSettings
-      // Cela évite de mélanger avec les clés IGDB (BYOK) lors du mapping
       final List<Map<String, dynamic>> maps = await db.query(
         'app_settings',
         where: 'key IN (?, ?, ?)',
-        whereArgs: ['minimize_on_launch', 'close_on_exit', 'theme_mode'],
+        whereArgs: _settingsKeys,
       );
 
       if (maps.isEmpty) {
-        AppLogger.info(
-          "Aucun paramètre trouvé en BDD, retour des valeurs par défaut.",
-        );
-        return AppSettings();
+        return AppSettings.defaultSettings();
       }
 
       return SettingsModel.fromDbRows(maps);
     } catch (e, stack) {
       AppLogger.error("Erreur lors de la lecture des settings", e, stack);
-      return AppSettings(); // Fail-safe
+      return AppSettings.defaultSettings();
     }
   }
 
@@ -42,7 +43,6 @@ class AppSettingsRepositoryImpl implements AppSettingsRepository {
     try {
       final db = await dbHelper.database;
 
-      // On utilise notre model pour obtenir la liste des lignes à insérer
       final model = SettingsModel(
         minimizeOnLaunch: settings.minimizeOnLaunch,
         closeOnExit: settings.closeOnExit,
@@ -59,7 +59,6 @@ class AppSettingsRepositoryImpl implements AppSettingsRepository {
       }
 
       await batch.commit(noResult: true);
-      AppLogger.info("Paramètres utilisateur mis à jour avec succès.");
     } catch (e, stack) {
       AppLogger.error("Erreur lors de l'update des settings", e, stack);
       rethrow;
@@ -71,14 +70,13 @@ class AppSettingsRepositoryImpl implements AppSettingsRepository {
     try {
       final db = await dbHelper.database;
 
-      // On supprime uniquement les clés liées à l'UI
       await db.delete(
         'app_settings',
         where: 'key IN (?, ?, ?)',
-        whereArgs: ['minimize_on_launch', 'close_on_exit', 'theme_mode'],
+        whereArgs: _settingsKeys,
       );
 
-      AppLogger.info("Paramètres réinitialisés par défaut.");
+      AppLogger.info("Paramètres réinitialisés.");
     } catch (e, stack) {
       AppLogger.error("Erreur lors du reset des settings", e, stack);
       rethrow;

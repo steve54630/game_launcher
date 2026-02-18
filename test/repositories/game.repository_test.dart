@@ -16,7 +16,7 @@ void main() {
 
   setUp(() async {
     // Appel à l'utilitaire global
-    dbHelper = await createTestKeysDatabase();
+    dbHelper = await createTestDatabase();
     db = await dbHelper.database;
     gameRepo = GameRepositoryImpl(dbHelper);
   });

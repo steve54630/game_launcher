@@ -2,7 +2,7 @@
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:game_launcher/core/utils/database_helper.dart';
 
-Future<DatabaseHelper> createTestKeysDatabase() async {
+Future<DatabaseHelper> createTestDatabase() async {
   sqfliteFfiInit();
   final dbHelper = DatabaseHelper.test();
 

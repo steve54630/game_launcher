@@ -1,13 +1,22 @@
 import 'dart:io';
+import 'package:file/file.dart';
+import 'package:file/local.dart';
 import 'package:game_launcher/core/utils/logger.dart';
 import 'package:game_launcher/domain/repositories/process.repository.dart';
 import '../../domain/entities/discovery_result.entity.dart';
 
 class ProcessRepositoryImpl implements ProcessRepository {
+  final FileSystem _fileSystem;
+
+  // Par défaut, utilise le vrai système de fichiers (prod)
+  // En test, on injectera un MemoryFileSystem
+  ProcessRepositoryImpl({FileSystem? fileSystem})
+    : _fileSystem = fileSystem ?? const LocalFileSystem();
+
   @override
   Future<void> openExecutable(String path) async {
     try {
-      final file = File(path);
+      final file = _fileSystem.directory(path);
       if (!await file.exists()) {
         throw Exception("Le fichier est introuvable : $path");
       }
@@ -27,70 +36,70 @@ class ProcessRepositoryImpl implements ProcessRepository {
   }
 
   @override
-  Future<bool> isProcessRunning(String path) async {
+  Future<bool> isProcessRunning(String exeName) async {
+    if (exeName.isEmpty) return false; // Sécurité immédiate
+
     try {
-      final fileName = File(path).uri.pathSegments.last;
       final result = await Process.run('tasklist', [
         '/FI',
-        'IMAGENAME eq $fileName',
+        'IMAGENAME eq $exeName',
+        '/NH',
       ]);
 
-      return result.stdout.toString().contains(fileName);
+      if (result.stdout == null) return false;
+
+      // On vérifie que le nom exact est dans la sortie et non une simple portion
+      return result.stdout.toString().contains(exeName);
     } catch (e) {
-      AppLogger.error("Erreur lors de la vérification du processus", e);
       return false;
     }
   }
 
   @override
-  Future<List<DiscoveryResult>> scanForExecutables(String directoryPath) async {
-    final List<DiscoveryResult> discovered = [];
-    try {
-      final directory = Directory(directoryPath);
-      if (!await directory.exists()) return [];
+  Future<List<DiscoveryResult>> scanForExecutables(String rootPath) async {
+    final directory = _fileSystem.directory(rootPath);
+    if (!await directory.exists()) return [];
 
-      await for (final entity in directory.list(
-        recursive: true,
-        followLinks: false,
-      )) {
-        if (entity is File && entity.path.toLowerCase().endsWith('.exe')) {
-          final fileName = entity.uri.pathSegments.last;
-          final nameLower = fileName.toLowerCase();
+    final List<DiscoveryResult> results = [];
 
-          // Filtres d'exclusion de base
-          if (nameLower.contains('unins') ||
-              nameLower.contains('helper') ||
-              nameLower.contains('crashpad') ||
-              nameLower.contains('setup')) {
-            continue;
-          }
+    await for (final entity in directory.list(
+      recursive: true,
+      followLinks: false,
+    )) {
+      if (entity is File) {
+        final path = entity.path;
 
-          // Découpage du chemin pour les segments (ComboBox de l'UI)
-          // On transforme "C:\Games\Doom\bin\game.exe" en ["Games", "Doom", "bin"]
-          final segments = entity.parent.path
-              .split(Platform.pathSeparator)
-              .where(
-                (s) => s.isNotEmpty && !s.contains(':'),
-              ) // On ignore le disque (C:)
-              .toList();
+        if (!path.toLowerCase().endsWith('.exe')) continue;
 
-          discovered.add(
-            DiscoveryResult(
-              rawName: fileName,
-              fullPath: entity.path,
-              pathSegments: segments,
-            ),
-          );
+        final segments = _fileSystem.path.split(path);
+
+        // FILTRE : On ignore si un des dossiers parents commence par '.'
+        if (segments.any((s) => s.startsWith('.') && s != '.' && s != '..')) {
+          continue;
         }
+
+        final fileName = _fileSystem.path.basename(path);
+        if (_isFiltered(fileName)) continue;
+
+        final relativeSegments = segments
+            .where((s) => !s.contains(':') && s.isNotEmpty)
+            .toList();
+
+        results.add(
+          DiscoveryResult(
+            rawName: fileName,
+            fullPath: path,
+            pathSegments: relativeSegments,
+          ),
+        );
       }
-      return discovered;
-    } catch (e, stack) {
-      AppLogger.error(
-        "Erreur lors du scan du dossier : $directoryPath",
-        e,
-        stack,
-      );
-      return [];
     }
+    return results;
+  }
+
+  bool _isFiltered(String name) {
+    final lowerName = name.toLowerCase();
+    const filters = ['unins', 'crashpad', 'helper', 'setup'];
+    return filters.any((f) => lowerName.contains(f));
   }
 }

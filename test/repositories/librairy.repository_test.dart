@@ -9,7 +9,7 @@ void main() {
   late LibrarySourceRepositoryImpl repository;
 
   setUp(() async {
-    dbHelper = await createTestKeysDatabase();
+    dbHelper = await createTestDatabase();
     repository = LibrarySourceRepositoryImpl(dbHelper);
   });
 
