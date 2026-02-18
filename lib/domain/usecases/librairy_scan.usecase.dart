@@ -9,8 +9,6 @@ class ScanLibrarySource {
   Future<List<DiscoveryResult>> execute(String path) async {
     final results = await repository.scanForExecutables(path);
 
-    // Logique métier : on ne présente à l'utilisateur que
-    // les résultats ayant un minimum de pertinence.
-    return results.where((res) => res.confidenceScore > 0.1).toList();
+    return results.toList();
   }
 }

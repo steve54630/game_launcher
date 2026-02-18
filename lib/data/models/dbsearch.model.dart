@@ -5,13 +5,14 @@ class IgdbSearchResultModel extends IgdbSearchResult {
     required super.igdbId,
     required super.name,
     super.coverUrl,
+    super.backgroundUrl,
     super.summary,
-    super.screenshotUrls,
-    super.videoId,
+    super.screenshots,
+    super.youtubeVideoId,
+    super.releaseDate,
   });
 
   /// Factory pour transformer le JSON d'IGDB
-  /// Note comment on traite les listes et les objets imbriqués (cover, screenshots, videos)
   factory IgdbSearchResultModel.fromJson(Map<String, dynamic> json) {
     // Extraction de l'URL de la cover (IGDB renvoie un objet)
     final coverData = json['cover'] as Map<String, dynamic>?;
@@ -38,8 +39,8 @@ class IgdbSearchResultModel extends IgdbSearchResult {
       name: json['name'] as String,
       coverUrl: coverUrl,
       summary: json['summary'] as String?,
-      screenshotUrls: screenshots,
-      videoId: videoId,
+      screenshots: screenshots,
+      youtubeVideoId: videoId,
     );
   }
 

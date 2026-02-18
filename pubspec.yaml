@@ -2,7 +2,7 @@ name: game_launcher
 description: "A new Flutter project."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
-publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+publish_to: "none" # Remove this line if you wish to publish to pub.dev
 
 # The following defines the version and build number for your application.
 # A version number is three numbers separated by dots, like 1.2.43
@@ -36,23 +36,26 @@ dependencies:
   cupertino_icons: ^1.0.8
 
   # --- Persistance & Système ---
-  sqflite_common_ffi: ^2.3.0+2  # SQLite pour Desktop
-  path_provider: ^2.1.2         # Chemins système (AppData, etc.)
-  path: ^1.9.0                  # Manipulation de chemins de fichiers
-  
+  sqflite_common_ffi: ^2.3.0+2 # SQLite pour Desktop
+  path_provider: ^2.1.2 # Chemins système (AppData, etc.)
+  path: ^1.9.0 # Manipulation de chemins de fichiers
+
   # --- UI & Fenêtrage ---
-  window_manager: ^0.5.1        # Contrôle de la fenêtre (réduire, cacher)
-  system_tray: ^2.0.2           # Icône dans la barre des tâches
-  animations: ^2.0.11           # Transitions "Hero" et "OpenContainer"
-  cached_network_image: ^3.3.1  # Gestion du cache des images IGDB
-  
+  window_manager: ^0.5.1 # Contrôle de la fenêtre (réduire, cacher)
+  system_tray: ^2.0.2 # Icône dans la barre des tâches
+  animations: ^2.0.11 # Transitions "Hero" et "OpenContainer"
+  cached_network_image: ^3.3.1 # Gestion du cache des images IGDB
+
   # --- Réseau & Sécurité ---
-  dio: ^5.4.1                   # Client HTTP pour IGDB
+  dio: ^5.4.1 # Client HTTP pour IGDB
   flutter_secure_storage: ^10.0.0 # Stockage sécurisé (pour tes clés BYOK)
-  encrypt: ^5.0.3               # Chiffrement AES des données en BDD
-  
+  encrypt: ^5.0.3 # Chiffrement AES des données en BDD
+
   # --- State Management (Au choix, Riverpod est très Clean Arch) ---
   flutter_riverpod: ^3.2.1
+  logger: ^2.5.0
+  http: ^1.6.0
+  mocktail: ^1.0.4
 
 dev_dependencies:
   flutter_test:
@@ -70,7 +73,6 @@ dev_dependencies:
 
 # The following section is specific to Flutter packages.
 flutter:
-
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
   # the material Icons class.

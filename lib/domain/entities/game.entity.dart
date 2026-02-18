@@ -36,18 +36,4 @@ class Game {
       isFavorite: isFavorite ?? this.isFavorite,
     );
   }
-
-  factory Game.fromMap(Map<String, dynamic> map) {
-    return Game(
-      id: map['id'] as int?,
-      igdbId: map['igdb_id'] as int?,
-      displayName: map['display_name'] as String,
-      executablePath: map['executable_path'] as String,
-      playtimeSeconds: map['playtime_seconds'] as int? ?? 0,
-      lastPlayedAt: map['last_played_at'] != null
-          ? DateTime.parse(map['last_played_at'] as String)
-          : null,
-      isFavorite: (map['is_favorite'] as int? ?? 0) == 1,
-    );
-  }
 }
