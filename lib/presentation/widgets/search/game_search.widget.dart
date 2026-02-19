@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
-import '../../../../../core/theme/app.spacing.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:game_launcher/core/theme/app.spacing.dart';
+import 'package:game_launcher/providers.dart';
 
-class SearchGameModal extends StatelessWidget {
+class SearchGameModal extends ConsumerWidget {
   const SearchGameModal({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(importProvider);
+    final notifier = ref.read(importProvider.notifier);
+
     return Container(
       padding: const EdgeInsets.all(AppSpacing.l),
-      // On fixe une hauteur pour la modal sur Desktop
       constraints: const BoxConstraints(maxHeight: 600, maxWidth: 500),
       child: Column(
         children: [
@@ -17,23 +21,41 @@ class SearchGameModal extends StatelessWidget {
             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
           ),
           const SizedBox(height: AppSpacing.m),
-          const TextField(
+          TextField(
             autofocus: true,
+            onChanged: notifier.searchIgdb,
             decoration: InputDecoration(
               hintText: "Entrez le nom du jeu...",
-              prefixIcon: Icon(Icons.search),
+              prefixIcon: const Icon(Icons.search),
+              suffix: state.isSearching
+                  ? const SizedBox(
+                      width: 15,
+                      height: 15,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : null,
             ),
           ),
           const SizedBox(height: AppSpacing.m),
           Expanded(
             child: ListView.builder(
-              itemCount: 5, // Simulation de 5 résultats
+              itemCount: state.searchResults.length,
               itemBuilder: (context, index) {
+                final game = state.searchResults[index];
                 return ListTile(
-                  leading: const Icon(Icons.videogame_asset),
-                  title: Text("Résultat de recherche #$index"),
-                  subtitle: const Text("Studio • Année"),
-                  onTap: () => Navigator.pop(context),
+                  leading: game.coverUrl != null
+                      ? Image.network(
+                          game.coverUrl!,
+                          width: 40,
+                          fit: BoxFit.cover,
+                        )
+                      : const Icon(Icons.videogame_asset),
+                  title: Text(game.name),
+                  subtitle: Text(game.releaseDate.toString()),
+                  onTap: () {
+                    notifier.setIgdbMatch(game);
+                    Navigator.pop(context);
+                  },
                 );
               },
             ),

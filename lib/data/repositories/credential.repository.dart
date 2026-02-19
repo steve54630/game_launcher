@@ -7,7 +7,7 @@ class CredentialsRepositoryImpl implements CredentialsRepository {
   // Configuration spécifique pour Windows
   final FlutterSecureStorage _storage;
 
-  CredentialsRepositoryImpl({required FlutterSecureStorage? storage})
+  CredentialsRepositoryImpl({FlutterSecureStorage? storage})
     : _storage =
           storage ?? const FlutterSecureStorage(wOptions: WindowsOptions());
 

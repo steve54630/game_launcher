@@ -18,7 +18,7 @@ class GameScreenshotGallery extends StatelessWidget {
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: screenshots.length,
-            separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.s),
+            separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.s),
             itemBuilder: (context, index) {
               return ClipRRect(
                 borderRadius: BorderRadius.circular(AppSpacing.cardRadius),

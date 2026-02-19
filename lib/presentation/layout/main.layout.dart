@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:game_launcher/presentation/pages/import_page.dart';
 import 'package:game_launcher/presentation/pages/library.page.dart';
+import 'package:game_launcher/presentation/widgets/connect.widget.dart';
 import 'package:game_launcher/presentation/widgets/menu.widget.dart';
 import 'dart:io';
 
@@ -17,7 +18,6 @@ class _MainLayoutState extends State<MainLayout> {
   final List<Widget> _pages = [
     const LibraryPage(), // Ta liste de jeux
     const GameImportPage(), // Ta page d'import
-    const Center(child: Text("Options")),
   ];
 
   void _onNavigation(int index) {
@@ -25,7 +25,20 @@ class _MainLayoutState extends State<MainLayout> {
     if (index == 3) {
       exit(0);
     }
+
+    if (index == 2) {
+      _showIgdbAuthDialog();
+      return; // On ne change pas la page active, on affiche juste la modale
+    }
     setState(() => _selectedIndex = index);
+  }
+
+  void _showIgdbAuthDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: true, // Permet de fermer en cliquant à côté
+      builder: (context) => const IgdbAuthModal(),
+    );
   }
 
   @override

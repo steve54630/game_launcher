@@ -33,6 +33,8 @@ class IgdbRepositoryImpl implements IgdbRepository {
           'genres.id',
           'genres.name',
           'first_release_date',
+          'screenshots.url',
+          'videos.video_id',
         ])
         .limit(10)
         .build();

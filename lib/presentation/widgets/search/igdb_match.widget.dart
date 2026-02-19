@@ -4,14 +4,12 @@ import '../../../../../core/theme/app.spacing.dart';
 
 class IgdbMatchCard extends StatelessWidget {
   final String title;
-  final String subtitle;
   final String? imageUrl;
   final VoidCallback onEdit;
 
   const IgdbMatchCard({
     super.key,
     required this.title,
-    required this.subtitle,
     this.imageUrl,
     required this.onEdit,
   });
@@ -39,10 +37,6 @@ class IgdbMatchCard extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
                   ),
-                ),
-                Text(
-                  subtitle,
-                  style: const TextStyle(color: Colors.white38, fontSize: 12),
                 ),
               ],
             ),

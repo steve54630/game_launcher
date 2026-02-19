@@ -33,9 +33,9 @@ class AppNavigationRail extends StatelessWidget {
           label: Text('Importer'),
         ),
         NavigationRailDestination(
-          icon: Icon(Icons.settings_outlined),
-          selectedIcon: Icon(Icons.settings),
-          label: Text('Options'),
+          icon: Icon(Icons.login_outlined),
+          selectedIcon: Icon(Icons.login),
+          label: Text('Connexion'),
         ),
         NavigationRailDestination(
           icon: Icon(Icons.power_settings_new),

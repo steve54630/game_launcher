@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:game_launcher/core/utils/database_helper.dart';
 import 'package:game_launcher/core/utils/logger.dart';
 import 'package:game_launcher/presentation/myapp.page.dart';
@@ -29,5 +30,5 @@ Future<void> main() async {
     AppLogger.error("Erreur lors de l'initialisation de la base : $e");
   }
 
-  runApp(const MyApp());
+  runApp(const ProviderScope(child: MyApp()));
 }

@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:developer' as dev;
+import 'package:game_launcher/core/utils/logger.dart';
 import 'package:game_launcher/domain/entities/search_result.entity.dart';
 
 class IgdbSearchResultModel extends IgdbSearchResult {
@@ -10,29 +13,55 @@ class IgdbSearchResultModel extends IgdbSearchResult {
     super.screenshots,
     super.youtubeVideoId,
     super.releaseDate,
+    super.genre,
   });
 
-  /// Factory pour transformer le JSON d'IGDB
   factory IgdbSearchResultModel.fromJson(Map<String, dynamic> json) {
-    // Extraction de l'URL de la cover (IGDB renvoie un objet)
+    // Debug: Affiche le JSON formaté dans la console
+    final prettyJson = const JsonEncoder.withIndent('  ').convert(json);
+    dev.log('---------- IGDB DEBUG ----------');
+    AppLogger.info(prettyJson);
+    dev.log('--------------------------------');
+
     final coverData = json['cover'] as Map<String, dynamic>?;
-    final coverUrl = coverData != null
+    final coverUrl = coverData != null && coverData.containsKey('url')
         ? _parseImageUrl(coverData['url'] as String)
         : null;
 
-    // Extraction des screenshots
     final screenshots = <String>[];
-    if (json['screenshots'] != null) {
+    if (json['screenshots'] != null && json['screenshots'] is List) {
       for (var shot in (json['screenshots'] as List)) {
-        screenshots.add(_parseImageUrl(shot['url'] as String));
+        if (shot is Map && shot.containsKey('url')) {
+          final url = shot['url'] as String?;
+          if (url != null && url.isNotEmpty) {
+            screenshots.add(_parseImageUrl(url));
+          }
+        }
       }
     }
 
-    // Extraction de la vidéo YouTube (IGDB renvoie une liste de vidéos)
     final videos = json['videos'] as List?;
     final videoId = (videos != null && videos.isNotEmpty)
         ? videos.first['video_id'] as String?
         : null;
+
+    DateTime? releaseDateTime;
+    if (json['first_release_date'] != null) {
+      releaseDateTime = DateTime.fromMillisecondsSinceEpoch(
+        (json['first_release_date'] as int) * 1000,
+      );
+    }
+
+    final genresList = json['genres'] as List?;
+    dynamic genreResult;
+
+    if (genresList != null && genresList.isNotEmpty) {
+      final firstGenre = genresList.first as Map<String, dynamic>;
+      genreResult = {
+        'id': firstGenre['id'] as int,
+        'name': firstGenre['name'] as String,
+      };
+    }
 
     return IgdbSearchResultModel(
       igdbId: json['id'] as int,
@@ -41,16 +70,16 @@ class IgdbSearchResultModel extends IgdbSearchResult {
       summary: json['summary'] as String?,
       screenshots: screenshots,
       youtubeVideoId: videoId,
+      releaseDate: releaseDateTime,
+      genre: genreResult,
     );
   }
 
-  /// Helper privé pour s'assurer que les URLs d'images sont en haute résolution (720p ou 1080p)
-  /// IGDB renvoie souvent du "//images..." par défaut.
   static String _parseImageUrl(String url) {
     if (url.startsWith('//')) {
       url = 'https:$url';
     }
-    // On remplace 't_thumb' par 't_720p' pour avoir une belle image
+    // Note: t_720p fonctionne bien pour les covers et screenshots
     return url.replaceAll('t_thumb', 't_720p');
   }
 }
