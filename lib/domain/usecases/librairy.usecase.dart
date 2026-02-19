@@ -1,4 +1,4 @@
-import 'package:game_launcher/domain/entities/game.entity.dart';
+import 'package:game_launcher/domain/model/game.model.dart';
 import 'package:game_launcher/domain/repositories/game.repository.dart';
 
 class GetLibrary {
@@ -6,7 +6,7 @@ class GetLibrary {
 
   GetLibrary(this.repository);
 
-  Future<List<Game>> execute() {
+  Future<List<GameWithDetails>> execute() {
     return repository.getAllGames();
   }
 }

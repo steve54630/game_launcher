@@ -1,10 +1,13 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:http/http.dart' as http;
+
 import 'package:game_launcher/core/utils/logger.dart';
+import 'package:game_launcher/data/utils/igbd_query_builder.dart';
+import 'package:game_launcher/domain/entities/credentials.entity.dart';
+import 'package:game_launcher/domain/entities/search_result.entity.dart';
+import 'package:game_launcher/domain/entities/igbd_genre.entity.dart';
 import 'package:game_launcher/domain/repositories/search_result.repository.dart';
-import '../../domain/entities/credentials.entity.dart';
-import '../../domain/entities/search_result.entity.dart';
+import 'package:http/http.dart' as http;
 
 class IgdbRepositoryImpl implements IgdbRepository {
   final http.Client _client;
@@ -21,14 +24,23 @@ class IgdbRepositoryImpl implements IgdbRepository {
   ) async {
     final token = await _getToken(credentials);
 
+    final queryString = IgdbQueryBuilder()
+        .search(query)
+        .fields([
+          'name',
+          'cover.url',
+          'summary',
+          'genres.id',
+          'genres.name',
+          'first_release_date',
+        ])
+        .limit(10)
+        .build();
+
     final response = await _client.post(
       Uri.parse('$_baseUrl/games'),
-      headers: {
-        'Client-ID': credentials.clientId,
-        'Authorization': 'Bearer $token',
-        'Accept': 'application/json',
-      },
-      body: 'search "$query"; fields name, cover.url, summary; limit 10;',
+      headers: _getHeaders(credentials.clientId, token),
+      body: queryString,
     );
 
     if (response.statusCode != 200) {
@@ -52,14 +64,24 @@ class IgdbRepositoryImpl implements IgdbRepository {
   ) async {
     final token = await _getToken(credentials);
 
+    final queryString = IgdbQueryBuilder()
+        .fields([
+          'name',
+          'cover.url',
+          'summary',
+          'screenshots.url',
+          'videos.video_id',
+          'genres.id',
+          'genres.name',
+          'first_release_date',
+        ])
+        .where('id = $igdbId')
+        .build();
+
     final response = await _client.post(
       Uri.parse('$_baseUrl/games'),
-      headers: {
-        'Client-ID': credentials.clientId,
-        'Authorization': 'Bearer $token',
-      },
-      body:
-          'fields name, cover.url, summary, screenshots.url, videos.video_id; where id = $igdbId;',
+      headers: _getHeaders(credentials.clientId, token),
+      body: queryString,
     );
 
     if (response.statusCode != 200) {
@@ -72,6 +94,14 @@ class IgdbRepositoryImpl implements IgdbRepository {
 
     return _mapToSearchResult(data.first);
   }
+
+  // --- Helpers Privés ---
+
+  Map<String, String> _getHeaders(String clientId, String token) => {
+    'Client-ID': clientId,
+    'Authorization': 'Bearer $token',
+    'Accept': 'application/json',
+  };
 
   Future<String> _getToken(IgdbCredentials credentials) async {
     if (_accessToken != null) return _accessToken!;
@@ -87,13 +117,12 @@ class IgdbRepositoryImpl implements IgdbRepository {
       _accessToken = data['access_token'];
       return _accessToken!;
     } else {
-      throw Exception(
-        "Twitch Auth Failure: ${response.statusCode} - ${response.body}",
-      );
+      throw Exception("Twitch Auth Failure: ${response.statusCode}");
     }
   }
 
   IgdbSearchResult _mapToSearchResult(Map<String, dynamic> map) {
+    // Mapping des images
     final coverUrl = map['cover'] != null
         ? (map['cover']['url'] as String).replaceFirst('t_thumb', 't_cover_big')
         : null;
@@ -107,18 +136,40 @@ class IgdbRepositoryImpl implements IgdbRepository {
             .toList() ??
         [];
 
+    // Nouveau : Mapping du genre principal
+    IgdbGenre? mainGenre;
+    final genresList = map['genres'] as List?;
+    if (genresList != null && genresList.isNotEmpty) {
+      final firstGenre = genresList.first;
+      mainGenre = IgdbGenre(
+        id: firstGenre['id'] as int,
+        name: firstGenre['name'] as String,
+      );
+    }
+
+    // Nouveau : Mapping de la date de sortie (Timestamp secondes -> DateTime)
+    final releaseTimestamp = map['first_release_date'] as int?;
+    final releaseDate = releaseTimestamp != null
+        ? DateTime.fromMillisecondsSinceEpoch(releaseTimestamp * 1000)
+        : null;
+
+    // Récupération de la vidéo YouTube (premier trailer trouvé)
+    final videoId =
+        (map['videos'] as List?)?.firstOrNull?['video_id'] as String?;
+
     return IgdbSearchResult(
       igdbId: map['id'] as int,
       name: map['name'] as String,
       coverUrl: coverUrl != null ? "https:$coverUrl" : null,
       summary: map['summary'] as String?,
       screenshots: screenshots,
+      genre: mainGenre,
+      releaseDate: releaseDate,
+      youtubeVideoId: videoId,
     );
   }
 
   void _logError(String context, http.Response response) {
-    AppLogger.error(
-      "IGDB API Error ($context): ${response.statusCode} - ${response.body}",
-    );
+    AppLogger.error("IGDB API Error ($context): ${response.statusCode}");
   }
 }

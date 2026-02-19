@@ -1,5 +1,6 @@
 import 'package:game_launcher/core/utils/logger.dart';
 import 'package:game_launcher/data/models/game.model.dart';
+import 'package:game_launcher/domain/model/game.model.dart';
 import 'package:game_launcher/domain/repositories/game.repository.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
@@ -12,21 +13,29 @@ class GameRepositoryImpl implements GameRepository {
   GameRepositoryImpl(this.dbHelper);
 
   @override
-  Future<List<Game>> getAllGames() async {
+  Future<List<GameWithDetails>> getAllGames() async {
     try {
       final db = await dbHelper.database;
 
-      // On utilise le SQL brut pour la jointure avec le cache IGDB
-      // afin de récupérer toutes les métadonnées d'un coup.
+      // Jointure triple : Games -> Cache -> Genres
       final List<Map<String, dynamic>> maps = await db.rawQuery('''
-        SELECT g.*, c.cover_url, c.summary, c.screenshot_urls, c.video_id
-        FROM games g
-        LEFT JOIN igdb_cache c ON g.igdb_id = c.igdb_id
-      ''');
+      SELECT 
+        g.*, 
+        c.cover_url, 
+        c.summary, 
+        c.screenshot_urls, 
+        c.video_id, 
+        c.release_date,
+        gen.name as genre_name
+      FROM games g
+      LEFT JOIN igdb_cache c ON g.igdb_id = c.igdb_id
+      LEFT JOIN genres gen ON c.genre_id = gen.id
+    ''');
 
-      AppLogger.info("${maps.length} jeux récupérés depuis la base.");
+      AppLogger.info("${maps.length} jeux récupérés avec leurs métadonnées.");
 
-      return maps.map((map) => GameModel.fromMap(map)).toList();
+      // Ici, le mapping doit être intelligent
+      return maps.map((map) => GameModel.toGameWithDetails(map)).toList();
     } catch (e, stack) {
       AppLogger.error("Erreur lors de la récupération des jeux", e, stack);
       rethrow;

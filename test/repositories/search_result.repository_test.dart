@@ -10,70 +10,121 @@ void main() {
   final credentials = IgdbCredentials(clientId: 'abc', clientSecret: '123');
 
   group('IgdbRepositoryImpl - API Tests', () {
-    // Test Succès Recherche
-    test('Should return a list of games on success', () async {
-      final mockClient = MockClient((request) async {
-        if (request.url.host == 'id.twitch.tv') {
+    // 1. TEST SUCCÈS RECHERCHE (Avec nouveaux champs)
+    test(
+      'Should return a list of games with genre and release date on success',
+      () async {
+        final mockClient = MockClient((request) async {
+          if (request.url.host == 'id.twitch.tv') {
+            return http.Response(
+              json.encode({'access_token': 'fake_token'}),
+              200,
+            );
+          }
           return http.Response(
-            json.encode({'access_token': 'fake_token'}),
+            json.encode([
+              {
+                'id': 1,
+                'name': 'Doom',
+                'cover': {'url': '//image.com/t_thumb/1.jpg'},
+                'summary': 'Great game',
+                'genres': [
+                  {'id': 4, 'name': 'Fighting'},
+                ],
+                'first_release_date': 755136000, // 1993-12-10
+              },
+            ]),
             200,
           );
-        }
-        return http.Response(
-          json.encode([
-            {
-              'id': 1,
-              'name': 'Doom',
-              'cover': {'url': '//image.com/t_thumb/1.jpg'},
-              'summary': 'Great game',
-            },
-          ]),
-          200,
-        );
-      });
+        });
 
-      final repo = IgdbRepositoryImpl(client: mockClient);
-      final results = await repo.searchGames('Doom', credentials);
+        final repo = IgdbRepositoryImpl(client: mockClient);
+        final results = await repo.searchGames('Doom', credentials);
 
-      expect(results.length, 1);
-      expect(results.first.name, 'Doom');
-      expect(results.first.coverUrl, contains('t_cover_big'));
-    });
+        expect(results.length, 1);
+        expect(results.first.name, 'Doom');
+        expect(results.first.coverUrl, contains('t_cover_big'));
+        // Nouveau : Validation Genre et Date
+        expect(results.first.genre?.name, 'Fighting');
+        expect(results.first.releaseDate?.year, 1993);
+      },
+    );
 
-    // Test getGameDetails (Couvre la logique des screenshots et mapping complexe)
-    test('Should return full game details including screenshots', () async {
-      final mockClient = MockClient((request) async {
-        if (request.url.host == 'id.twitch.tv') {
+    // 2. TEST DÉTAILS COMPLETS (Screenshots + Vidéo YouTube)
+    test(
+      'Should return full game details including screenshots and video ID',
+      () async {
+        final mockClient = MockClient((request) async {
+          if (request.url.host == 'id.twitch.tv') {
+            return http.Response(
+              json.encode({'access_token': 'fake_token'}),
+              200,
+            );
+          }
           return http.Response(
-            json.encode({'access_token': 'fake_token'}),
+            json.encode([
+              {
+                'id': 1,
+                'name': 'Doom',
+                'screenshots': [
+                  {'url': '//images.com/t_thumb/sc1.jpg'},
+                  {'url': '//images.com/t_thumb/sc2.jpg'},
+                ],
+                'videos': [
+                  {'video_id': 'dQw4w9WgXcQ'},
+                ],
+                'genres': [
+                  {'id': 5, 'name': 'Shooter'},
+                ],
+              },
+            ]),
             200,
           );
-        }
-        return http.Response(
-          json.encode([
-            {
-              'id': 1,
-              'name': 'Doom',
-              'screenshots': [
-                {'url': '//images.com/t_thumb/sc1.jpg'},
-                {'url': '//images.com/t_thumb/sc2.jpg'},
-              ],
-            },
-          ]),
-          200,
-        );
-      });
+        });
 
-      final repo = IgdbRepositoryImpl(client: mockClient);
-      final game = await repo.getGameDetails(1, credentials);
+        final repo = IgdbRepositoryImpl(client: mockClient);
+        final game = await repo.getGameDetails(1, credentials);
 
-      expect(game.name, 'Doom');
-      expect(game.screenshots.length, 2);
-      expect(game.screenshots.first, contains('t_720p'));
-      expect(game.screenshots.first, startsWith('https:'));
-    });
+        expect(game.name, 'Doom');
+        expect(game.screenshots.length, 2);
+        expect(game.screenshots.first, contains('t_720p'));
+        expect(game.screenshots.first, startsWith('https:'));
+        // Nouveau : Validation Vidéo et Genre
+        expect(game.youtubeVideoId, 'dQw4w9WgXcQ');
+        expect(game.genre?.id, 5);
+      },
+    );
 
-    // Test Erreur de Parsing (Couvre le bloc catch et FormatException)
+    // 3. TEST CHAMPS OPTIONNELS MANQUANTS
+    test(
+      'Should handle games with missing optional fields (genres, date, video)',
+      () async {
+        final mockClient = MockClient((request) async {
+          if (request.url.host == 'id.twitch.tv') {
+            return http.Response(
+              json.encode({'access_token': 'fake_token'}),
+              200,
+            );
+          }
+          return http.Response(
+            json.encode([
+              {'id': 2, 'name': 'Empty Game'},
+            ]),
+            200,
+          );
+        });
+
+        final repo = IgdbRepositoryImpl(client: mockClient);
+        final game = await repo.getGameDetails(2, credentials);
+
+        expect(game.genre, isNull);
+        expect(game.releaseDate, isNull);
+        expect(game.youtubeVideoId, isNull);
+        expect(game.screenshots, isEmpty);
+      },
+    );
+
+    // 4. TEST ERREUR PARSING JSON
     test('Should throw FormatException on malformed JSON', () async {
       final mockClient = MockClient((request) async {
         if (request.url.host == 'id.twitch.tv') {
@@ -93,7 +144,7 @@ void main() {
       );
     });
 
-    // Test Auth Failure (Déjà présent, indispensable)
+    // 5. TEST ÉCHEC AUTH TWITCH
     test('Should throw exception on Auth failure', () async {
       final mockClient = MockClient((request) async {
         return http.Response('Unauthorized', 401);
@@ -107,7 +158,7 @@ void main() {
       );
     });
 
-    // Test Erreur HTTP 500 (Couvre HttpException et _logError)
+    // 6. TEST ERREUR SERVEUR HTTP 500
     test('Should throw HttpException on server error (500)', () async {
       final mockClient = MockClient((request) async {
         if (request.url.host == 'id.twitch.tv') {
@@ -127,7 +178,7 @@ void main() {
       );
     });
 
-    // Test Jeu non trouvé (Pour getGameDetails)
+    // 7. TEST JEU VIDE (GetDetails)
     test('Should throw Exception when game details array is empty', () async {
       final mockClient = MockClient((request) async {
         if (request.url.host == 'id.twitch.tv') {

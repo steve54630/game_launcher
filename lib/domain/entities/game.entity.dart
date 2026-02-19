@@ -21,6 +21,7 @@ class Game {
     int? id,
     int? igdbId,
     String? displayName,
+    String? gameGenre,
     String? executablePath,
     int? playtimeSeconds,
     DateTime? lastPlayedAt,

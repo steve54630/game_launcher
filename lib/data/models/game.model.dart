@@ -1,4 +1,7 @@
 import 'package:game_launcher/domain/entities/game.entity.dart';
+import 'package:game_launcher/domain/entities/igbd_genre.entity.dart';
+import 'package:game_launcher/domain/entities/search_result.entity.dart';
+import 'package:game_launcher/domain/model/game.model.dart';
 
 class GameModel extends Game {
   GameModel({
@@ -49,5 +52,39 @@ class GameModel extends Game {
       lastPlayedAt: game.lastPlayedAt,
       isFavorite: game.isFavorite,
     );
+  }
+
+  static GameWithDetails toGameWithDetails(Map<String, dynamic> map) {
+    // 1. Extraction du jeu (Données App)
+    final game = GameModel.fromMap(map);
+
+    // 2. Extraction des métadonnées (Données IGDB)
+    // On vérifie la présence de igdb_id dans la map résultant de la jointure
+    if (map['igdb_id'] == null) {
+      return GameWithDetails(game: game, details: null);
+    }
+
+    final metadata = IgdbSearchResult(
+      igdbId: map['igdb_id'] as int,
+      name: map['name'] as String? ?? game.displayName,
+      coverUrl: map['cover_url'] as String?,
+      summary: map['summary'] as String?,
+      youtubeVideoId: map['video_id'] as String?,
+      releaseDate: map['release_date'] != null
+          ? DateTime.tryParse(map['release_date'] as String)
+          : null,
+      genre: map['genre_id'] != null
+          ? IgdbGenre(
+              id: map['genre_id'] as int,
+              name: map['genre_name'] as String,
+            )
+          : null,
+      // Note: screenshots peut être parsé ici si stocké en JSON/CSV dans SQLite
+      screenshots: map['screenshot_urls'] != null
+          ? (map['screenshot_urls'] as String).split(',')
+          : const [],
+    );
+
+    return GameWithDetails(game: game, details: metadata);
   }
 }

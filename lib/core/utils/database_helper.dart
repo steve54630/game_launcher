@@ -24,50 +24,56 @@ class DatabaseHelper {
   }
 
   Future<Database> _initDB(String fileName) async {
-    // 1. Initialiser le moteur FFI pour Windows
     sqfliteFfiInit();
     final databaseFactory = databaseFactoryFfi;
 
-    // 2. Obtenir le dossier de stockage de l'application
-    // Sur Windows, cela va généralement dans AppData/Roaming/votre_app
     final dbDirectory = await getApplicationSupportDirectory();
-    // Construire le chemin complet du fichier de base de données
     final path = join(dbDirectory.path, fileName);
 
-    // 3. Ouvrir la base de données
     return await databaseFactory.openDatabase(
       path,
       options: OpenDatabaseOptions(
-        version: 1,
+        version:
+            1, // Si tu as déjà lancé l'app, il faudra passer à 2 et gérer onUpgrade
         onCreate: createDB,
         onConfigure: onConfigure,
       ),
     );
   }
 
-  // Configuration de la base avant création/ouverture
   Future<void> onConfigure(Database db) async {
-    // Force le respect des relations entre les tables (ex: Games -> IgdbCache)
     await db.execute('PRAGMA foreign_keys = ON');
-    // Optimisation des performances pour Windows (Mode WAL)
     await db.execute('PRAGMA journal_mode = WAL');
   }
 
   Future<void> createDB(Database db, int version) async {
     final batch = db.batch();
 
+    // 1. Table des Genres (Référentiel normalisé)
+    batch.execute('''
+      CREATE TABLE genres (
+        id INTEGER PRIMARY KEY, -- ID officiel IGDB
+        name TEXT NOT NULL UNIQUE
+      )
+    ''');
+
+    // 2. Cache IGDB (Enrichi avec le genre principal et la date)
     batch.execute('''
       CREATE TABLE igdb_cache (
         igdb_id INTEGER PRIMARY KEY,
         name TEXT NOT NULL,
         cover_url TEXT,
         summary TEXT,
-        screenshot_urls TEXT,
+        screenshot_urls TEXT, -- Stocké en JSON ou CSV
         video_id TEXT,
-        updated_at TEXT NOT NULL
+        release_date TEXT,    -- ISO8601 String
+        genre_id INTEGER,     -- FK vers genres
+        updated_at TEXT NOT NULL,
+        FOREIGN KEY (genre_id) REFERENCES genres (id) ON DELETE SET NULL
       )
     ''');
 
+    // 3. Ta table de jeux locaux
     batch.execute('''
       CREATE TABLE games (
         id INTEGER PRIMARY KEY AUTOINCREMENT,

@@ -1,3 +1,5 @@
+import 'package:game_launcher/domain/entities/igbd_genre.entity.dart';
+
 class IgdbSearchResult {
   final int igdbId;
   final String name;
@@ -7,6 +9,7 @@ class IgdbSearchResult {
   final List<String> screenshots;
   final String? youtubeVideoId; // L'ID pour le trailer (ex: 'dQw4w9WgXcQ')
   final DateTime? releaseDate;
+  final IgdbGenre? genre;
 
   IgdbSearchResult({
     required this.igdbId,
@@ -17,5 +20,6 @@ class IgdbSearchResult {
     this.screenshots = const [],
     this.youtubeVideoId,
     this.releaseDate,
+    this.genre,
   });
 }
