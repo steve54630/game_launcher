@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:game_launcher/core/providers/ui.providers.dart';
 import 'package:game_launcher/core/theme/app.spacing.dart';
 import 'package:game_launcher/presentation/widgets/search/flie_picker.widget.dart';
-import 'package:game_launcher/providers.dart';
 
 class LeftImportSection extends ConsumerStatefulWidget {
   const LeftImportSection({super.key});

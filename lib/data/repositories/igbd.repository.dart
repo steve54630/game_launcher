@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:game_launcher/core/utils/logger.dart';
 import 'package:game_launcher/domain/repositories/igbd.repository.dart';
 import 'package:http/http.dart' as http;
 import 'package:game_launcher/domain/entities/credentials.entity.dart';
@@ -60,6 +61,7 @@ class IgdbSearchRepositoryImpl implements IgdbSearchRepository {
       _accessToken = json.decode(response.body)['access_token'];
       return _accessToken!;
     }
+    AppLogger.error("Erreur lors de l'authentification");
     throw Exception("Auth Failure");
   }
 

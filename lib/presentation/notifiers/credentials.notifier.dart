@@ -1,7 +1,6 @@
-// presentation/providers/settings.provider.dart
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:game_launcher/core/providers/repository.providers.dart';
 import 'package:game_launcher/domain/entities/credentials.entity.dart';
-import 'package:game_launcher/providers.dart';
 
 class SettingsNotifier extends Notifier<void> {
   @override
@@ -17,7 +16,3 @@ class SettingsNotifier extends Notifier<void> {
     await ref.read(credentialsProvider).saveIgdbCredentials(credentials);
   }
 }
-
-final settingsProvider = NotifierProvider<SettingsNotifier, void>(() {
-  return SettingsNotifier();
-});

@@ -1,10 +1,8 @@
-import "package:game_launcher/domain/model/game.model.dart";
-
 import "../entities/game.entity.dart";
 
 abstract interface class GameRepository {
   // Récupère tous les jeux de la BDD
-  Future<List<GameWithDetails>> getAllGames();
+  Future<List<Game>> getAllGames();
 
   // Ajoute ou met à jour un jeu
   Future<void> upsertGame(Game game);

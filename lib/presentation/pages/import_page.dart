@@ -4,7 +4,6 @@ import 'package:game_launcher/presentation/widgets/search/left.widget.dart';
 import 'package:game_launcher/presentation/widgets/search/right.widget.dart';
 
 class GameImportPage extends ConsumerWidget {
-  // Plus besoin de StatefulWidget !
   const GameImportPage({super.key});
 
   @override

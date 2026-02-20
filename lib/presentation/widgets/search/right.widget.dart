@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:game_launcher/core/providers/ui.providers.dart';
 import 'package:game_launcher/core/theme/app.spacing.dart';
 import 'package:game_launcher/presentation/widgets/game_details/gallery.widget.dart';
 import 'package:game_launcher/presentation/widgets/search/game_search.widget.dart';
 import 'package:game_launcher/presentation/widgets/search/igdb_match.widget.dart';
 import 'package:game_launcher/presentation/widgets/search/import_button.widget.dart';
-import 'package:game_launcher/providers.dart';
 
 class RightImportSection extends ConsumerWidget {
   const RightImportSection({super.key});
@@ -25,63 +25,70 @@ class RightImportSection extends ConsumerWidget {
             isLoading: state.isSearching,
           ),
           const SizedBox(height: AppSpacing.m),
-          IgdbMatchCard(
-            title: game?.name ?? "Aucun jeu lié",
-            imageUrl: game?.coverUrl,
-            onEdit: () => showDialog(
-              context: context,
-              builder: (_) => const Dialog(child: SearchGameModal()),
+
+          // On utilise Expanded ici pour que la zone de contenu prenne toute la place
+          // mais laisse le bouton ImportActionButton fixe en bas.
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  IgdbMatchCard(
+                    title: game?.name ?? "Aucun jeu lié",
+                    imageUrl: game?.coverUrl,
+                    onEdit: () => showDialog(
+                      context: context,
+                      builder: (_) => const Dialog(child: SearchGameModal()),
+                    ),
+                  ),
+
+                  if (game != null) ...[
+                    const SizedBox(height: AppSpacing.l),
+
+                    if (game.screenshots.isNotEmpty) ...[
+                      GameScreenshotGallery(screenshots: game.screenshots),
+                      const SizedBox(height: AppSpacing.l),
+                    ],
+
+                    const Divider(color: Colors.white10),
+                    const SizedBox(height: AppSpacing.l),
+
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _DetailInfo(
+                          label: "Sortie",
+                          // Petit tips : formatte la date si possible
+                          value: game.releaseDate != null
+                              ? "${game.releaseDate!.day}/${game.releaseDate!.month}/${game.releaseDate!.year}"
+                              : "Inconnue",
+                        ),
+                        const SizedBox(width: AppSpacing.xl),
+                        if (game.genre != null)
+                          _DetailInfo(label: "Genre", value: game.genre!.name),
+                      ],
+                    ),
+
+                    const SizedBox(height: AppSpacing.l),
+                    const Text("SYNOPSIS", style: _labelStyle),
+                    const SizedBox(height: AppSpacing.s),
+
+                    Text(
+                      game.summary ?? "Aucune description disponible.",
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: Colors.white70,
+                        height: 1.5,
+                      ),
+                    ),
+                    // On ajoute un peu d'espace en bas du scroll pour ne pas coller au bouton
+                    const SizedBox(height: AppSpacing.xl),
+                  ],
+                ],
+              ),
             ),
           ),
-          if (game != null) ...[
-            const SizedBox(height: AppSpacing.l),
 
-            if (game.screenshots.isNotEmpty) ...[
-              GameScreenshotGallery(screenshots: game.screenshots),
-              const SizedBox(height: AppSpacing.l),
-            ],
-            if (game.screenshots.isEmpty) ...[
-              IgdbMatchCard(
-                title: game.name,
-                imageUrl: game.coverUrl,
-                onEdit: () => showDialog(
-                  context: context,
-                  builder: (_) => const Dialog(child: SearchGameModal()),
-                ),
-              ),
-            ],
-
-            const Divider(color: Colors.white10),
-            const SizedBox(height: AppSpacing.l),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _DetailInfo(
-                  label: "Sortie",
-                  value: game.releaseDate.toString(),
-                ),
-                const SizedBox(width: AppSpacing.xl),
-                if (game.genre != null)
-                  _DetailInfo(label: "Genre", value: game.genre!.name),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.l),
-            const Text("SYNOPSIS", style: _labelStyle),
-            const SizedBox(height: AppSpacing.s),
-            Expanded(
-              child: SingleChildScrollView(
-                child: Text(
-                  game.summary ?? "Aucune description disponible.",
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: Colors.white70,
-                    height: 1.5,
-                  ),
-                ),
-              ),
-            ),
-          ] else
-            const Spacer(),
           const SizedBox(height: AppSpacing.m),
           const ImportActionButton(),
         ],

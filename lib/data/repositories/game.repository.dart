@@ -1,13 +1,10 @@
 import 'package:game_launcher/core/utils/logger.dart';
 import 'package:game_launcher/data/models/game.model.dart';
-import 'package:game_launcher/domain/model/game.model.dart'; // Import de GameWithDetails
 import 'package:game_launcher/domain/repositories/game.repository.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import '../../core/utils/database_helper.dart';
 import '../../domain/entities/game.entity.dart';
-import '../../domain/entities/search_result.entity.dart';
-import '../../domain/entities/igbd_genre.entity.dart';
 
 class GameRepositoryImpl implements GameRepository {
   final DatabaseHelper dbHelper;
@@ -15,32 +12,27 @@ class GameRepositoryImpl implements GameRepository {
   GameRepositoryImpl(this.dbHelper);
 
   @override
-  Future<List<GameWithDetails>> getAllGames() async {
+  Future<List<Game>> getAllGames() async {
     try {
       final db = await dbHelper.database;
 
-      // Jointure triple avec tri explicite pour valider le test 'A-Train' vs 'Zelda'
+      // On garde la jointure car elle est nécessaire pour le tri
+      // et potentiellement pour remplir des champs de l'entité Game
       final List<Map<String, dynamic>> maps = await db.rawQuery('''
-        SELECT 
-          g.*, 
-          c.name as cache_name,
-          c.cover_url, 
-          c.summary, 
-          c.screenshot_urls, 
-          c.video_id, 
-          c.release_date,
-          gen.name as genre_name
-        FROM games g
-        LEFT JOIN igdb_cache c ON g.igdb_id = c.igdb_id
-        LEFT JOIN genres gen ON c.genre_id = gen.id
-        ORDER BY g.display_name ASC
-      ''');
+      SELECT 
+        g.*, 
+        c.name as cache_name,
+        gen.name as genre_name
+      FROM games g
+      LEFT JOIN igdb_cache c ON g.igdb_id = c.igdb_id
+      LEFT JOIN genres gen ON c.genre_id = gen.id
+      ORDER BY g.display_name ASC
+    ''');
 
-      AppLogger.info("${maps.length} jeux récupérés avec leurs métadonnées.");
+      AppLogger.info("${maps.length} jeux récupérés.");
 
       return maps.map((map) {
-        // Mapping de l'entité locale Game
-        final game = Game(
+        return Game(
           id: map['id'],
           igdbId: map['igdb_id'],
           displayName: map['display_name'],
@@ -50,26 +42,9 @@ class GameRepositoryImpl implements GameRepository {
           lastPlayedAt: map['last_played_at'] != null
               ? DateTime.parse(map['last_played_at'])
               : null,
+          // Si ton entité Game a des champs pour le genre ou la cover,
+          // tu peux les ajouter ici en utilisant map['genre_name'], etc.
         );
-
-        // Mapping des détails IGDB si présents
-        IgdbSearchResult? details;
-        if (map['igdb_id'] != null) {
-          details = IgdbSearchResult(
-            igdbId: map['igdb_id'],
-            name: map['cache_name'] ?? map['display_name'],
-            coverUrl: map['cover_url'],
-            summary: map['summary'],
-            // Correction du null sur le Genre : on reconstruit l'objet à partir de 'genre_name'
-            genre: map['genre_name'] != null
-                ? IgdbGenre(id: map['genre_id'] ?? 0, name: map['genre_name'])
-                : null,
-            screenshots: [], // À parser si tes tests vérifient les captures
-            youtubeVideoId: map['video_id'],
-          );
-        }
-
-        return GameWithDetails(game: game, details: details);
       }).toList();
     } catch (e, stack) {
       AppLogger.error("Erreur lors de la récupération des jeux", e, stack);

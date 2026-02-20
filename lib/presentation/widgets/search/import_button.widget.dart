@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:game_launcher/core/providers/ui.providers.dart';
 import 'package:game_launcher/core/theme/app.spacing.dart';
-import 'package:game_launcher/providers.dart';
 
 class ImportActionButton extends ConsumerWidget {
   const ImportActionButton({super.key});
@@ -37,7 +37,7 @@ class ImportActionButton extends ConsumerWidget {
                           backgroundColor: Colors.green,
                         ),
                       );
-                      Navigator.of(context).pop();
+                      notifier.reset();
                     }
                   }
                 : null,

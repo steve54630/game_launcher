@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:game_launcher/presentation/providers/credentials.provider.dart';
+import 'package:game_launcher/core/providers/ui.providers.dart';
 
 class IgdbAuthModal extends ConsumerStatefulWidget {
   const IgdbAuthModal({super.key});

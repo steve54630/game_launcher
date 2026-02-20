@@ -1,7 +1,10 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:game_launcher/core/providers/repository.providers.dart';
+import 'package:game_launcher/core/providers/ui.providers.dart';
+import 'package:game_launcher/core/providers/usecase.providers.dart';
+import 'package:game_launcher/core/utils/logger.dart';
 import 'package:game_launcher/data/utils/file_picker.dart';
-import 'package:game_launcher/providers.dart';
 import 'package:game_launcher/domain/entities/search_result.entity.dart';
 import 'package:game_launcher/domain/entities/game.entity.dart';
 import '../../../domain/model/game.model.dart';
@@ -124,7 +127,7 @@ class ImportNotifier extends Notifier<ImportState> {
           return;
         }
 
-        final repository = ref.read(igdbSearchRepositoryProvider);
+        final repository = ref.read(igdbSearchProvider);
         final results = await repository
             .search(query, credentials)
             .timeout(const Duration(seconds: 10));
@@ -139,6 +142,7 @@ class ImportNotifier extends Notifier<ImportState> {
           errorMessage: results.isEmpty ? "Aucun match trouvé." : null,
         );
       } catch (e) {
+        AppLogger.error("Erreur lors de la recherche IGDB", e);
         if (query != state.displayName) return;
         state = state.copyWith(isSearching: false, errorMessage: e.toString());
       }
@@ -166,10 +170,16 @@ class ImportNotifier extends Notifier<ImportState> {
       await useCase.execute(finalGame);
       return true;
     } catch (e) {
+      AppLogger.error("Erreur lors de l'enregistrement du jeu", e);
       state = state.copyWith(errorMessage: "Échec de l'enregistrement.");
       return false;
     } finally {
       state = state.copyWith(isSaving: false);
     }
+  }
+
+  void reset() {
+    _debounce?.cancel();
+    state = ImportState();
   }
 }
