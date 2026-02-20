@@ -1,34 +1,46 @@
-import 'dart:async'; // Ajout nécessaire
+import 'dart:async';
+
+import 'package:game_launcher/core/utils/database_helper.dart';
 import 'package:game_launcher/core/utils/logger.dart';
 import 'package:game_launcher/data/models/game.model.dart';
+import 'package:game_launcher/domain/entities/game.entity.dart';
 import 'package:game_launcher/domain/repositories/game.repository.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
-import '../../core/utils/database_helper.dart';
-import '../../domain/entities/game.entity.dart';
 
 class GameRepositoryImpl implements GameRepository {
   final DatabaseHelper dbHelper;
-
-  // Le broadcast permet d'avoir plusieurs écouteurs (ex: LibraryPage et une sidebar)
   final _gamesStreamController = StreamController<List<Game>>.broadcast();
 
   GameRepositoryImpl(this.dbHelper);
 
   @override
   Stream<List<Game>> watchAllGames() {
+    AppLogger.info(
+      "GameRepository: Un nouvel écouteur s'est branché au Stream des jeux.",
+    );
     _refreshStream();
     return _gamesStreamController.stream;
   }
 
-  /// Méthode interne pour récupérer les données et les pousser dans le Stream
   Future<void> _refreshStream() async {
     try {
+      AppLogger.debug(
+        "GameRepository: Rafraîchissement du flux (Stream) demandé...",
+      );
       final games = await getAllGames();
+
       if (!_gamesStreamController.isClosed) {
         _gamesStreamController.add(games);
+        AppLogger.debug(
+          "GameRepository: Flux mis à jour avec ${games.length} jeux.",
+        );
+      } else {
+        AppLogger.warning(
+          "GameRepository: Tentative de mise à jour d'un StreamController fermé.",
+        );
       }
     } catch (e) {
-      AppLogger.error("Erreur lors de la notification du Stream", e);
+      AppLogger.error("GameRepository: Échec de la notification du Stream", e);
     }
   }
 
@@ -36,6 +48,8 @@ class GameRepositoryImpl implements GameRepository {
   Future<List<Game>> getAllGames() async {
     try {
       final db = await dbHelper.database;
+      AppLogger.info("GameRepository: Exécution de la requête SQL globale...");
+
       final List<Map<String, dynamic>> maps = await db.rawQuery('''
         SELECT 
           g.*, 
@@ -47,25 +61,38 @@ class GameRepositoryImpl implements GameRepository {
         ORDER BY g.display_name ASC
       ''');
 
-      AppLogger.info("${maps.length} jeux récupérés.");
+      AppLogger.info(
+        "GameRepository: ${maps.length} entrées récupérées de la base.",
+      );
 
-      return maps
-          .map(
-            (map) => Game(
-              id: map['id'],
-              igdbId: map['igdb_id'],
-              displayName: map['display_name'],
-              executablePath: map['executable_path'],
-              playtimeSeconds: map['playtime_seconds'] ?? 0,
-              isFavorite: map['is_favorite'] == 1,
-              lastPlayedAt: map['last_played_at'] != null
-                  ? DateTime.parse(map['last_played_at'])
-                  : null,
-            ),
-          )
-          .toList();
+      return maps.map((map) {
+        // En tant que dev, on logue si un parsing de date échoue spécifiquement
+        try {
+          return Game(
+            id: map['id'],
+            igdbId: map['igdb_id'],
+            displayName: map['display_name'],
+            executablePath: map['executable_path'],
+            playtimeSeconds: map['playtime_seconds'] ?? 0,
+            isFavorite: map['is_favorite'] == 1,
+            lastPlayedAt: map['last_played_at'] != null
+                ? DateTime.parse(map['last_played_at'])
+                : null,
+          );
+        } catch (e) {
+          AppLogger.error(
+            "GameRepository: Erreur de parsing sur le jeu ${map['display_name']}",
+            e,
+          );
+          rethrow;
+        }
+      }).toList();
     } catch (e, stack) {
-      AppLogger.error("Erreur lors de la récupération des jeux", e, stack);
+      AppLogger.error(
+        "GameRepository: Erreur fatale lors de getAllGames()",
+        e,
+        stack,
+      );
       rethrow;
     }
   }
@@ -76,19 +103,23 @@ class GameRepositoryImpl implements GameRepository {
       final db = await dbHelper.database;
       final GameModel model = GameModel.fromEntity(game);
 
+      AppLogger.info(
+        "GameRepository: Upsert SQLite pour '${game.displayName}' (ID: ${game.id ?? 'Nouveau'})",
+      );
+
       await db.insert(
         'games',
         model.toMap(),
         conflictAlgorithm: ConflictAlgorithm.replace,
       );
 
-      AppLogger.debug("Jeu synchronisé : ${game.displayName}");
-
-      // NOTIFICATION : On rafraîchit le stream après l'ajout
+      AppLogger.info(
+        "GameRepository: Upsert réussi. Déclenchement de la notification Stream.",
+      );
       await _refreshStream();
     } catch (e, stack) {
       AppLogger.error(
-        "Erreur lors de l'upsert du jeu: ${game.displayName}",
+        "GameRepository: Échec de l'upsert pour ${game.displayName}",
         e,
         stack,
       );
@@ -100,20 +131,32 @@ class GameRepositoryImpl implements GameRepository {
   Future<void> deleteGame(int id) async {
     try {
       final db = await dbHelper.database;
-      await db.delete('games', where: 'id = ?', whereArgs: [id]);
+      AppLogger.warning("GameRepository: Suppression du jeu ID: $id");
 
-      AppLogger.info("Jeu ID $id supprimé.");
+      final count = await db.delete('games', where: 'id = ?', whereArgs: [id]);
 
-      // NOTIFICATION : On rafraîchit le stream après la suppression
-      await _refreshStream();
+      if (count > 0) {
+        AppLogger.info(
+          "GameRepository: Jeu supprimé avec succès. Rafraîchissement du flux.",
+        );
+        await _refreshStream();
+      } else {
+        AppLogger.warning(
+          "GameRepository: Aucun jeu trouvé avec l'ID $id pour la suppression.",
+        );
+      }
     } catch (e, stack) {
-      AppLogger.error("Erreur lors de la suppression du jeu ID $id", e, stack);
+      AppLogger.error(
+        "GameRepository: Erreur lors de la suppression du jeu ID $id",
+        e,
+        stack,
+      );
       rethrow;
     }
   }
 
-  // N'oublie pas de fermer le controller si le repository est détruit
   void dispose() {
+    AppLogger.info("GameRepository: Fermeture définitive du StreamController.");
     _gamesStreamController.close();
   }
 }

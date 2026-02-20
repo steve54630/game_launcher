@@ -18,6 +18,7 @@ class AppSettingsRepositoryImpl implements AppSettingsRepository {
 
   @override
   Future<AppSettings> getSettings() async {
+    AppLogger.info("SettingsRepo: Lecture des paramètres de l'application...");
     try {
       final db = await dbHelper.database;
 
@@ -28,18 +29,31 @@ class AppSettingsRepositoryImpl implements AppSettingsRepository {
       );
 
       if (maps.isEmpty) {
+        AppLogger.info(
+          "SettingsRepo: Aucun paramètre trouvé en base, chargement des valeurs par défaut.",
+        );
         return AppSettings.defaultSettings();
       }
 
+      AppLogger.info(
+        "SettingsRepo: ${maps.length} clés de configuration récupérées.",
+      );
       return SettingsModel.fromDbRows(maps);
     } catch (e, stack) {
-      AppLogger.error("Erreur lors de la lecture des settings", e, stack);
+      AppLogger.error(
+        "SettingsRepo: Échec de lecture des paramètres, repli sur les valeurs par défaut",
+        e,
+        stack,
+      );
       return AppSettings.defaultSettings();
     }
   }
 
   @override
   Future<void> updateSettings(AppSettings settings) async {
+    AppLogger.info(
+      "SettingsRepo: Mise à jour des paramètres (Theme: ${settings.themeMode})...",
+    );
     try {
       final db = await dbHelper.database;
 
@@ -49,8 +63,13 @@ class AppSettingsRepositoryImpl implements AppSettingsRepository {
         themeMode: settings.themeMode,
       );
 
+      final rows = model.toDbRows();
       final batch = db.batch();
-      for (var row in model.toDbRows()) {
+
+      for (var row in rows) {
+        AppLogger.debug(
+          "SettingsRepo: Batch préparé pour la clé: ${row['key']} = ${row['value']}",
+        );
         batch.insert(
           'app_settings',
           row,
@@ -59,26 +78,42 @@ class AppSettingsRepositoryImpl implements AppSettingsRepository {
       }
 
       await batch.commit(noResult: true);
+      AppLogger.info(
+        "SettingsRepo: Batch des paramètres appliqué avec succès.",
+      );
     } catch (e, stack) {
-      AppLogger.error("Erreur lors de l'update des settings", e, stack);
+      AppLogger.error(
+        "SettingsRepo: Échec lors de la mise à jour des paramètres",
+        e,
+        stack,
+      );
       rethrow;
     }
   }
 
   @override
   Future<void> resetToDefault() async {
+    AppLogger.warning(
+      "SettingsRepo: Demande de réinitialisation complète des paramètres.",
+    );
     try {
       final db = await dbHelper.database;
 
-      await db.delete(
+      final count = await db.delete(
         'app_settings',
         where: 'key IN (?, ?, ?)',
         whereArgs: _settingsKeys,
       );
 
-      AppLogger.info("Paramètres réinitialisés.");
+      AppLogger.info(
+        "SettingsRepo: $count lignes supprimées. L'application utilisera les valeurs par défaut au prochain chargement.",
+      );
     } catch (e, stack) {
-      AppLogger.error("Erreur lors du reset des settings", e, stack);
+      AppLogger.error(
+        "SettingsRepo: Erreur lors de la réinitialisation des paramètres",
+        e,
+        stack,
+      );
       rethrow;
     }
   }

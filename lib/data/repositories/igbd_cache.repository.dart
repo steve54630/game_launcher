@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:game_launcher/core/utils/database_helper.dart';
-import 'package:game_launcher/core/utils/logger.dart'; // Import nécessaire
+import 'package:game_launcher/core/utils/logger.dart';
 import 'package:game_launcher/data/utils/image_downloader.dart';
 import 'package:game_launcher/domain/entities/search_result.entity.dart';
 import 'package:game_launcher/domain/entities/igbd_genre.entity.dart';
@@ -13,70 +13,87 @@ class IgdbCacheRepositoryImpl implements IgdbCacheRepository {
 
   @override
   Future<void> saveToCache(IgdbSearchResult metadata) async {
+    AppLogger.info(
+      "IgdbCache: Début de la mise en cache pour '${metadata.name}' (ID: ${metadata.igdbId})",
+    );
+
     try {
       final db = await _dbHelper.database;
 
-      // 1. Gérer les screenshots
+      // 1. Gérer les screenshots (Téléchargement local)
       List<String> localPaths = [];
-      try {
-        if (metadata.screenshots.isNotEmpty) {
+      if (metadata.screenshots.isNotEmpty) {
+        AppLogger.info(
+          "IgdbCache: Tentative de téléchargement de ${metadata.screenshots.length} screenshots...",
+        );
+        try {
           for (var url in metadata.screenshots) {
             final path = await ImageDownloaderService.downloadAndSaveImage(
               url,
               'game_${metadata.igdbId}',
             );
-            if (path != null) localPaths.add(path);
+            if (path != null) {
+              localPaths.add(path);
+            }
           }
+          AppLogger.info(
+            "IgdbCache: ${localPaths.length} images sauvegardées localement.",
+          );
+        } catch (e) {
+          AppLogger.warning(
+            "IgdbCache: Échec partiel du téléchargement images (ID: ${metadata.igdbId}): $e",
+          );
         }
-      } catch (e) {
-        AppLogger.warning(
-          "Échec téléchargement images (ID: ${metadata.igdbId}): $e",
-        );
       }
 
       final finalScreenshots = localPaths.isNotEmpty
           ? localPaths
           : metadata.screenshots;
 
-      // 2. S'assurer que le genre existe avant d'insérer le cache
+      // 2. S'assurer que le genre existe
       if (metadata.genre != null) {
-        await db.insert(
-          'genres',
-          {'id': metadata.genre!.id, 'name': metadata.genre!.name},
-          conflictAlgorithm:
-              ConflictAlgorithm.ignore, // On ne l'écrase pas s'il existe
+        AppLogger.debug(
+          "IgdbCache: Synchronisation du genre '${metadata.genre!.name}'",
         );
+        await db.insert('genres', {
+          'id': metadata.genre!.id,
+          'name': metadata.genre!.name,
+        }, conflictAlgorithm: ConflictAlgorithm.ignore);
       }
 
-      // 3. Insertion avec vérification des données critiques
+      // 3. Insertion/Update du cache principal
+      AppLogger.info(
+        "IgdbCache: Écriture des métadonnées enrichies en base (Video: ${metadata.youtubeVideoId != null}, Date: ${metadata.releaseDate != null})",
+      );
+
       await db.insert('igdb_cache', {
         'igdb_id': metadata.igdbId,
         'name': metadata.name,
-        'cover_url': metadata.coverUrl ?? '', // Évite le NULL si possible
+        'cover_url': metadata.coverUrl ?? '',
         'summary': metadata.summary ?? 'Pas de description disponible.',
         'screenshot_urls': jsonEncode(finalScreenshots),
         'video_id': metadata.youtubeVideoId ?? '',
         'release_date': metadata.releaseDate?.toIso8601String() ?? '',
-        'genre_id': metadata
-            .genre
-            ?.id, // Sera NULL si pas de genre, ce qui est géré par ton LEFT JOIN
+        'genre_id': metadata.genre?.id,
         'updated_at': DateTime.now().toIso8601String(),
       }, conflictAlgorithm: ConflictAlgorithm.replace);
 
-      AppLogger.debug("Cache IGDB validé pour: ${metadata.name}");
+      AppLogger.info(
+        "IgdbCache: Succès de la mise en cache pour '${metadata.name}'",
+      );
     } catch (e, stack) {
       AppLogger.error(
-        "Erreur fatale cache IGDB (ID: ${metadata.igdbId})",
+        "IgdbCache: Erreur fatale lors de saveToCache (ID: ${metadata.igdbId})",
         e,
         stack,
       );
-      // Ici, on pourrait rethrow car si le cache échoue, l'import est "sale"
       rethrow;
     }
   }
 
   @override
   Future<IgdbSearchResult?> getCachedMetadata(int igdbId) async {
+    AppLogger.debug("IgdbCache: Lecture du cache pour ID: $igdbId");
     try {
       final db = await _dbHelper.database;
 
@@ -90,8 +107,17 @@ class IgdbCacheRepositoryImpl implements IgdbCacheRepository {
         [igdbId],
       );
 
-      if (results.isEmpty) return null;
+      if (results.isEmpty) {
+        AppLogger.info(
+          "IgdbCache: Aucun résultat trouvé en cache pour ID: $igdbId",
+        );
+        return null;
+      }
+
       final map = results.first;
+      AppLogger.info(
+        "IgdbCache: Données récupérées du cache pour '${map['name']}'",
+      );
 
       return IgdbSearchResult(
         igdbId: map['igdb_id'] as int,
@@ -101,6 +127,13 @@ class IgdbCacheRepositoryImpl implements IgdbCacheRepository {
         screenshots: List<String>.from(
           jsonDecode(map['screenshot_urls'] as String),
         ),
+        // On récupère les nouveaux champs ici
+        youtubeVideoId: (map['video_id'] as String?)?.isEmpty ?? true
+            ? null
+            : map['video_id'] as String,
+        releaseDate: (map['release_date'] as String?)?.isEmpty ?? true
+            ? null
+            : DateTime.tryParse(map['release_date'] as String),
         genre: map['genre_name'] != null
             ? IgdbGenre(
                 id: map['genre_id'] as int,
@@ -110,26 +143,39 @@ class IgdbCacheRepositoryImpl implements IgdbCacheRepository {
       );
     } catch (e, stack) {
       AppLogger.error(
-        "Erreur lors de la lecture du cache IGDB (ID: $igdbId)",
+        "IgdbCache: Erreur lors de la lecture du cache (ID: $igdbId)",
         e,
         stack,
       );
-      return null; // En cas d'erreur DB, on fait comme si le cache était vide
+      return null;
     }
   }
 
   @override
   Future<void> deleteFromCache(int igdbId) async {
+    AppLogger.warning("IgdbCache: Suppression du cache pour ID: $igdbId");
     try {
       final db = await _dbHelper.database;
-      await db.delete('igdb_cache', where: 'igdb_id = ?', whereArgs: [igdbId]);
+      final count = await db.delete(
+        'igdb_cache',
+        where: 'igdb_id = ?',
+        whereArgs: [igdbId],
+      );
+
+      if (count > 0) {
+        AppLogger.info("IgdbCache: Cache supprimé avec succès.");
+      } else {
+        AppLogger.debug(
+          "IgdbCache: Rien à supprimer, le cache était déjà vide.",
+        );
+      }
     } catch (e, stack) {
       AppLogger.error(
-        "Erreur lors de la suppression du cache IGDB (ID: $igdbId)",
+        "IgdbCache: Erreur lors de la suppression (ID: $igdbId)",
         e,
         stack,
       );
-      rethrow; // Ici on rethrow car une suppression qui échoue est anormal
+      rethrow;
     }
   }
 }
