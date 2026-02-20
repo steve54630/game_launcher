@@ -55,6 +55,8 @@ class IgdbCacheRepositoryImpl implements IgdbCacheRepository {
         'cover_url': metadata.coverUrl ?? '', // Évite le NULL si possible
         'summary': metadata.summary ?? 'Pas de description disponible.',
         'screenshot_urls': jsonEncode(finalScreenshots),
+        'video_id': metadata.youtubeVideoId ?? '',
+        'release_date': metadata.releaseDate?.toIso8601String() ?? '',
         'genre_id': metadata
             .genre
             ?.id, // Sera NULL si pas de genre, ce qui est géré par ton LEFT JOIN

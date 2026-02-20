@@ -1,6 +1,5 @@
 import 'dart:convert';
-import 'dart:developer' as dev;
-import 'package:game_launcher/core/utils/logger.dart';
+import 'package:game_launcher/domain/entities/igbd_genre.entity.dart';
 import 'package:game_launcher/domain/entities/search_result.entity.dart';
 
 class IgdbSearchResultModel extends IgdbSearchResult {
@@ -17,50 +16,39 @@ class IgdbSearchResultModel extends IgdbSearchResult {
   });
 
   factory IgdbSearchResultModel.fromJson(Map<String, dynamic> json) {
-    // Debug: Affiche le JSON formaté dans la console
-    final prettyJson = const JsonEncoder.withIndent('  ').convert(json);
-    dev.log('---------- IGDB DEBUG ----------');
-    AppLogger.info(prettyJson);
-    dev.log('--------------------------------');
+    // 1. Extraction sécurisée de la vidéo (évite RangeError)
+    final videosList = json['videos'] as List?;
+    // On vérifie la structure interne pour être sûr
+    final videoId = (videosList != null && videosList.isNotEmpty)
+        ? (videosList.first as Map<String, dynamic>)['video_id'] as String?
+        : null;
 
+    // 2. Extraction sécurisée du genre
+    final genresList = json['genres'] as List?;
+    IgdbGenre? genreResult;
+
+    if (genresList != null && genresList.isNotEmpty) {
+      final firstGenre = genresList.first as Map<String, dynamic>;
+      // IMPORTANT : On instancie l'entité, on ne passe pas la Map brute
+      genreResult = IgdbGenre(
+        id: firstGenre['id'] as int,
+        name: firstGenre['name'] as String,
+      );
+    }
+
+    // 3. Extraction des images (Screenshots & Cover)
     final coverData = json['cover'] as Map<String, dynamic>?;
-    final coverUrl = coverData != null && coverData.containsKey('url')
+    final coverUrl = (coverData != null && coverData['url'] != null)
         ? _parseImageUrl(coverData['url'] as String)
         : null;
 
     final screenshots = <String>[];
-    if (json['screenshots'] != null && json['screenshots'] is List) {
+    if (json['screenshots'] is List) {
       for (var shot in (json['screenshots'] as List)) {
-        if (shot is Map && shot.containsKey('url')) {
-          final url = shot['url'] as String?;
-          if (url != null && url.isNotEmpty) {
-            screenshots.add(_parseImageUrl(url));
-          }
+        if (shot is Map && shot['url'] != null) {
+          screenshots.add(_parseImageUrl(shot['url'] as String));
         }
       }
-    }
-
-    final videos = json['videos'] as List?;
-    final videoId = (videos != null && videos.isNotEmpty)
-        ? videos.first['video_id'] as String?
-        : null;
-
-    DateTime? releaseDateTime;
-    if (json['first_release_date'] != null) {
-      releaseDateTime = DateTime.fromMillisecondsSinceEpoch(
-        (json['first_release_date'] as int) * 1000,
-      );
-    }
-
-    final genresList = json['genres'] as List?;
-    dynamic genreResult;
-
-    if (genresList != null && genresList.isNotEmpty) {
-      final firstGenre = genresList.first as Map<String, dynamic>;
-      genreResult = {
-        'id': firstGenre['id'] as int,
-        'name': firstGenre['name'] as String,
-      };
     }
 
     return IgdbSearchResultModel(
@@ -70,7 +58,11 @@ class IgdbSearchResultModel extends IgdbSearchResult {
       summary: json['summary'] as String?,
       screenshots: screenshots,
       youtubeVideoId: videoId,
-      releaseDate: releaseDateTime,
+      releaseDate: json['first_release_date'] != null
+          ? DateTime.fromMillisecondsSinceEpoch(
+              (json['first_release_date'] as int) * 1000,
+            )
+          : null,
       genre: genreResult,
     );
   }

@@ -1,6 +1,7 @@
 import 'package:game_launcher/domain/model/game.model.dart';
 import 'package:game_launcher/domain/repositories/game.repository.dart';
 import 'package:game_launcher/domain/repositories/igbd_cache.repository.dart';
+import 'package:game_launcher/core/utils/logger.dart';
 
 class LibrairyUseCase {
   final GameRepository gameRepo;
@@ -8,20 +9,50 @@ class LibrairyUseCase {
 
   LibrairyUseCase({required this.gameRepo, required this.igdbRepo});
 
-  // On change le type de retour en Stream
   Stream<List<GameWithDetails>> execute() {
-    // 1. On écoute le Stream du repository (ex: watcher SQLite/Drift)
-    return gameRepo.watchAllGames().asyncMap((games) async {
-      // 2. Pour chaque nouvelle liste de jeux, on enrichit avec le cache
-      return await Future.wait(
-        games.map((game) async {
-          final details = game.igdbId != null
-              ? await igdbRepo.getCachedMetadata(game.igdbId!)
-              : null;
+    AppLogger.info(
+      "LibrairyUseCase: Initialisation du flux de la bibliothèque.",
+    );
 
-          return GameWithDetails(game: game, details: details);
-        }),
+    return gameRepo.watchAllGames().asyncMap((games) async {
+      AppLogger.info(
+        "LibrairyUseCase: Mise à jour reçue du repository (${games.length} jeux détectés).",
       );
+
+      try {
+        final enrichedGames = await Future.wait(
+          games.map((game) async {
+            if (game.igdbId == null) {
+              AppLogger.warning(
+                "LibrairyUseCase: Le jeu '${game.displayName}' n'a pas d'ID IGDB associé.",
+              );
+              return GameWithDetails(game: game, details: null);
+            }
+
+            final details = await igdbRepo.getCachedMetadata(game.igdbId!);
+
+            if (details == null) {
+              AppLogger.warning(
+                "LibrairyUseCase: Cache manquant pour IGDB ID: ${game.igdbId} (${game.displayName}).",
+              );
+            }
+
+            return GameWithDetails(game: game, details: details);
+          }),
+        );
+
+        AppLogger.info(
+          "LibrairyUseCase: Enrichissement terminé pour ${enrichedGames.length} jeux.",
+        );
+        return enrichedGames;
+      } catch (e) {
+        AppLogger.error(
+          "LibrairyUseCase: Erreur lors de l'enrichissement de la bibliothèque",
+          e,
+        );
+        // On retourne une liste vide ou on propage l'erreur selon ta stratégie UI
+        return [];
+      }
     });
   }
 }

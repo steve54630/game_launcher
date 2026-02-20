@@ -1,29 +1,36 @@
 import 'dart:io';
-import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:game_launcher/core/utils/logger.dart';
 
 class ImageDownloaderService {
-  static Future<String?> downloadAndSaveImage(String url, String folderName) async {
-    try {
-      final response = await http.get(Uri.parse(url));
-      if (response.statusCode != 200) return null;
+  static final Dio _dio = Dio();
 
-      // Dossier : AppData/Roaming/game_launcher/media/folderName/
+  static Future<String?> downloadAndSaveImage(
+    String url,
+    String folderName,
+  ) async {
+    try {
+      if (url.isEmpty) return null;
+
       final appDir = await getApplicationSupportDirectory();
+      // On crée le dossier s'il n'existe pas
       final saveDir = Directory(p.join(appDir.path, 'media', folderName));
-      
       if (!await saveDir.exists()) await saveDir.create(recursive: true);
 
-      // Nom de fichier unique basé sur l'URL IGDB
       final fileName = p.basename(Uri.parse(url).path);
-      final file = File(p.join(saveDir.path, fileName));
-      
-      await file.writeAsBytes(response.bodyBytes);
-      return file.path; // On renvoie le chemin local
+      final savePath = p.join(saveDir.path, fileName);
+
+      // Téléchargement direct vers le fichier
+      final response = await _dio.download(url, savePath);
+
+      if (response.statusCode == 200) {
+        return savePath;
+      }
+      return null;
     } catch (e) {
-      AppLogger.error("Échec du téléchargement image: $url", e);
+      AppLogger.error("Échec du téléchargement Dio: $url", e);
       return null;
     }
   }

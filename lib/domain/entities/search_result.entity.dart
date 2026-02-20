@@ -22,4 +22,15 @@ class IgdbSearchResult {
     this.releaseDate,
     this.genre,
   });
+
+  @override
+  String toString() {
+    return 'IgdbSearchResult('
+        'id: $igdbId, '
+        'name: "$name", '
+        'genre: ${genre?.name ?? "N/A"}, '
+        'hasTrailer: ${youtubeVideoId != null}, '
+        'screenshots: ${screenshots.length}'
+        ')';
+  }
 }

@@ -66,15 +66,19 @@ class ImportNotifier extends Notifier<ImportState> {
   }
 
   Future<void> selectGameFile() async {
+    AppLogger.info("ImportNotifier: Démarrage de la sélection de fichier...");
     try {
       final path = await FilePickerService.pickExecutable();
-      if (path == null) return;
+      if (path == null) {
+        AppLogger.info("ImportNotifier: Sélection annulée par l'utilisateur.");
+        return;
+      }
 
-      // Extraction propre du nom du fichier
       final fileName = path.split(RegExp(r'[/\\]')).last.split('.').first;
+      AppLogger.info(
+        "ImportNotifier: Fichier sélectionné: $fileName (Path: $path)",
+      );
 
-      // FORCE : On met à jour le displayName systématiquement pour
-      // déclencher la synchronisation avec le TextField dans l'UI
       state = state.copyWith(
         localPath: path,
         displayName: fileName,
@@ -83,9 +87,12 @@ class ImportNotifier extends Notifier<ImportState> {
         clearError: true,
       );
 
-      // On lance la recherche IGDB avec le nouveau nom
       searchIgdb(fileName);
     } catch (e) {
+      AppLogger.error(
+        "ImportNotifier: Erreur lors de la sélection du fichier",
+        e,
+      );
       state = state.copyWith(
         errorMessage: "Erreur lors de la sélection du fichier.",
       );
@@ -94,6 +101,9 @@ class ImportNotifier extends Notifier<ImportState> {
 
   void updateDisplayName(String newName) {
     if (newName == state.displayName) return;
+    AppLogger.info(
+      "ImportNotifier: DisplayName modifié par l'utilisateur: $newName",
+    );
 
     state = state.copyWith(
       displayName: newName,
@@ -109,17 +119,27 @@ class ImportNotifier extends Notifier<ImportState> {
     _debounce?.cancel();
 
     if (query.isEmpty) {
+      AppLogger.info("ImportNotifier: Query vide, arrêt de la recherche.");
       state = state.copyWith(isSearching: false, searchResults: []);
       return;
     }
 
-    // On active le loader immédiatement
     state = state.copyWith(isSearching: true, clearError: true);
+    AppLogger.info(
+      "ImportNotifier: Recherche IGDB programmée pour '$query' (debounce 500ms)",
+    );
 
     _debounce = Timer(const Duration(milliseconds: 500), () async {
+      AppLogger.info(
+        "ImportNotifier: Exécution de la recherche IGDB pour '$query'...",
+      );
+
       try {
         final credentials = await ref.read(igdbCredentialsProvider.future);
         if (credentials == null) {
+          AppLogger.error(
+            "ImportNotifier: Échec de récupération des credentials IGDB.",
+          );
           state = state.copyWith(
             isSearching: false,
             errorMessage: "Identifiants IGDB manquants.",
@@ -132,45 +152,91 @@ class ImportNotifier extends Notifier<ImportState> {
             .search(query, credentials)
             .timeout(const Duration(seconds: 10));
 
-        // Protection contre les réponses désynchronisées
-        if (query != state.displayName) return;
+        // Protection contre les race conditions
+        if (query != state.displayName) {
+          AppLogger.warning(
+            "ImportNotifier: Résultat ignoré (Query obsolète: $query != ${state.displayName})",
+          );
+          return;
+        }
+
+        AppLogger.info(
+          "ImportNotifier: Recherche réussie pour '$query'. ${results.length} résultats trouvés.",
+        );
 
         state = state.copyWith(
           isSearching: false,
           searchResults: results,
-          selectedIgdbGame: () => results.isNotEmpty ? results.first : null,
-          errorMessage: results.isEmpty ? "Aucun match trouvé." : null,
+          selectedIgdbGame: () => (results.isNotEmpty) ? results.first : null,
+          errorMessage: (results.isEmpty) ? "Aucun match trouvé." : null,
         );
+
+        if (results.isNotEmpty) {
+          AppLogger.info(
+            "ImportNotifier: Match automatique sur '${results.first.name}' (ID: ${results.first.igdbId})",
+          );
+        }
       } catch (e) {
-        AppLogger.error("Erreur lors de la recherche IGDB", e);
+        AppLogger.error(
+          "ImportNotifier: Crash pendant searchIgdb('$query')",
+          e,
+        );
+
         if (query != state.displayName) return;
-        state = state.copyWith(isSearching: false, errorMessage: e.toString());
+
+        state = state.copyWith(
+          isSearching: false,
+          errorMessage: "Erreur réseau ou mapping IGDB.",
+        );
       }
     });
   }
 
-  void setIgdbMatch(IgdbSearchResult game) =>
-      state = state.copyWith(selectedIgdbGame: () => game, clearError: true);
+  void setIgdbMatch(IgdbSearchResult game) {
+    AppLogger.info(
+      "ImportNotifier: Match sélectionné manuellement: ${game.name} (ID: ${game.igdbId})",
+    );
+    state = state.copyWith(selectedIgdbGame: () => game, clearError: true);
+  }
 
   Future<bool> executeImport() async {
-    if (!state.canImport) return false;
+    AppLogger.info("ImportNotifier: Lancement de l'import final...");
+
+    if (!state.canImport) {
+      AppLogger.warning(
+        "ImportNotifier: Import impossible (Data manquante ou déjà en cours)",
+      );
+      return false;
+    }
+
+    final selected = state.selectedIgdbGame;
+    final path = state.localPath;
+
+    if (selected == null || path == null) return false;
 
     state = state.copyWith(isSaving: true, clearError: true);
+
     try {
       final useCase = ref.read(saveGameUseCaseProvider);
+
       final finalGame = GameWithDetails(
         game: Game(
-          displayName: state.displayName ?? state.selectedIgdbGame!.name,
-          executablePath: state.localPath!,
-          igdbId: state.selectedIgdbGame!.igdbId,
+          displayName: state.displayName ?? selected.name,
+          executablePath: path,
+          igdbId: selected.igdbId,
         ),
-        details: state.selectedIgdbGame,
+        details: selected,
       );
 
+      AppLogger.info(
+        "ImportNotifier: Exécution du UseCase de sauvegarde pour '${finalGame.game.displayName}'",
+      );
       await useCase.execute(finalGame);
+
+      AppLogger.info("ImportNotifier: Import réussi avec succès.");
       return true;
     } catch (e) {
-      AppLogger.error("Erreur lors de l'enregistrement du jeu", e);
+      AppLogger.error("ImportNotifier: Échec critique de l'import", e);
       state = state.copyWith(errorMessage: "Échec de l'enregistrement.");
       return false;
     } finally {
@@ -179,6 +245,7 @@ class ImportNotifier extends Notifier<ImportState> {
   }
 
   void reset() {
+    AppLogger.info("ImportNotifier: Reset de l'état d'import.");
     _debounce?.cancel();
     state = ImportState();
   }

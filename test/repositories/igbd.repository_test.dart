@@ -1,27 +1,19 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:game_launcher/data/repositories/igbd.repository.dart';
-import 'package:http/http.dart' as http;
 import 'package:mocktail/mocktail.dart';
 import 'package:game_launcher/domain/entities/credentials.entity.dart';
 
-// Avec Mocktail, on crée simplement une classe qui hérite de Mock
-class MockHttpClient extends Mock implements http.Client {}
-
-// On crée un substitut pour Uri car Mocktail en a besoin pour le matching d'arguments complexes
-class FakeUri extends Fake implements Uri {}
+// On mocke l'instance Dio
+class MockDio extends Mock implements Dio {}
 
 void main() {
   late IgdbSearchRepositoryImpl repository;
-  late MockHttpClient mockClient;
-
-  setUpAll(() {
-    // Enregistrement des types personnalisés pour Mocktail
-    registerFallbackValue(FakeUri());
-  });
+  late MockDio mockDio;
 
   setUp(() {
-    mockClient = MockHttpClient();
-    repository = IgdbSearchRepositoryImpl(client: mockClient);
+    mockDio = MockDio();
+    repository = IgdbSearchRepositoryImpl(dio: mockDio);
   });
 
   final tCredentials = IgdbCredentials(
@@ -29,69 +21,83 @@ void main() {
     clientSecret: 'test_secret',
   );
 
-  const tJsonResponse = '''
-  [
+  // Dio attend déjà un objet (Map ou List), plus besoin de la String brute JSON
+  final tRawResponse = [
     {
       "id": 2155,
       "name": "Dark Souls",
-      "cover": {"url": "//images.igdb.com/igdb/image/upload/t_thumb/co1vcp.jpg"},
+      "cover": {
+        "url": "//images.igdb.com/igdb/image/upload/t_thumb/co1vcp.jpg",
+      },
       "summary": "Prepare to die",
       "first_release_date": 1316649600,
-      "genres": [{"id": 12, "name": "RPG"}]
-    }
-  ]
-  ''';
+      "genres": [
+        {"id": 12, "name": "RPG"},
+      ],
+      "videos": [
+        {"video_id": "93LFz_j5f8U"},
+      ],
+    },
+  ];
 
-  group('IgdbSearchRepository - Mocktail Edition', () {
+  group('IgdbSearchRepository - Dio Edition', () {
     test('doit retourner une liste mappée en cas de succès 200', () async {
-      // Mock de l'auth
+      // 1. Mock de l'authentification (Twitch)
       when(
-        () => mockClient.post(
-          any(
-            that: predicate<Uri>(
-              (uri) => uri.toString().contains('id.twitch.tv'),
-            ),
-          ),
-          headers: any(named: 'headers'),
-          body: any(named: 'body'),
+        () => mockDio.post(
+          any(that: contains('id.twitch.tv')),
+          queryParameters: any(named: 'queryParameters'),
         ),
       ).thenAnswer(
-        (_) async => http.Response('{"access_token": "token"}', 200),
+        (_) async => Response(
+          data: {'access_token': 'token_123'},
+          statusCode: 200,
+          requestOptions: RequestOptions(path: ''),
+        ),
       );
 
-      // Mock de la recherche
+      // 2. Mock de la recherche (IGDB)
       when(
-        () => mockClient.post(
-          any(
-            that: predicate<Uri>(
-              (uri) => uri.toString().contains('api.igdb.com'),
-            ),
-          ),
-          headers: any(named: 'headers'),
-          body: any(named: 'body'),
+        () => mockDio.post(
+          any(that: contains('api.igdb.com')),
+          data: any(named: 'data'),
+          options: any(named: 'options'),
         ),
-      ).thenAnswer((_) async => http.Response(tJsonResponse, 200));
+      ).thenAnswer(
+        (_) async => Response(
+          data: tRawResponse,
+          statusCode: 200,
+          requestOptions: RequestOptions(path: ''),
+        ),
+      );
 
+      // Act
       final results = await repository.search("Dark Souls", tCredentials);
 
+      // Assert
       expect(results.first.name, "Dark Souls");
-      expect(results.first.igdbId, 2155);
-      // Vérification du mapping d'URL que tu as codé
+      expect(results.first.youtubeVideoId, "93LFz_j5f8U");
       expect(results.first.coverUrl, contains("t_cover_big"));
     });
 
-    test('doit throw une Exception si le status code n\'est pas 200', () async {
+    test('doit throw une Exception si Dio renvoie une erreur', () async {
       when(
-        () => mockClient.post(
+        () => mockDio.post(
           any(),
-          headers: any(named: 'headers'),
-          body: any(named: 'body'),
+          data: any(named: 'data'),
+          options: any(named: 'options'),
         ),
-      ).thenAnswer((_) async => http.Response('Error', 404));
+      ).thenAnswer(
+        (_) async => Response(
+          data: 'Error',
+          statusCode: 404,
+          requestOptions: RequestOptions(path: ''),
+        ),
+      );
 
       expect(
         () => repository.search("Dark Souls", tCredentials),
-        throwsException,
+        throwsA(isA<Exception>()),
       );
     });
   });

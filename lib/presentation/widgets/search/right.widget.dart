@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:game_launcher/core/providers/ui.providers.dart';
 import 'package:game_launcher/core/theme/app.spacing.dart';
-import 'package:game_launcher/presentation/widgets/game_details/gallery.widget.dart';
+import 'package:game_launcher/presentation/widgets/common/gallery.widget.dart';
+import 'package:game_launcher/presentation/widgets/common/video_preview.widget.dart';
 import 'package:game_launcher/presentation/widgets/search/game_search.widget.dart';
 import 'package:game_launcher/presentation/widgets/search/igdb_match.widget.dart';
 import 'package:game_launcher/presentation/widgets/search/import_button.widget.dart';
@@ -82,7 +83,11 @@ class RightImportSection extends ConsumerWidget {
                       ),
                     ),
                     // On ajoute un peu d'espace en bas du scroll pour ne pas coller au bouton
-                    const SizedBox(height: AppSpacing.xl),
+                    const SizedBox(height: AppSpacing.s),
+                    if (game.youtubeVideoId != null) ...[
+                      const Text("PREVIEW", style: _labelStyle),
+                      GameVideoPreview(youtubeVideoId: game.youtubeVideoId!),
+                    ],
                   ],
                 ],
               ),
