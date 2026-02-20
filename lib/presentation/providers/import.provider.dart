@@ -124,9 +124,9 @@ class ImportNotifier extends Notifier<ImportState> {
           return;
         }
 
-        final repository = ref.read(igdbRepositoryProvider);
+        final repository = ref.read(igdbSearchRepositoryProvider);
         final results = await repository
-            .searchGames(query, credentials)
+            .search(query, credentials)
             .timeout(const Duration(seconds: 10));
 
         // Protection contre les réponses désynchronisées

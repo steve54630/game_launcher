@@ -4,7 +4,7 @@ import 'package:game_launcher/data/repositories/game.repository.dart';
 import 'package:game_launcher/domain/entities/game.entity.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
-import '../test.utilities.dart';
+import '../test.utilities.dart'; // Vérifie que le nom du fichier est exact (test_utilities.dart)
 
 void main() {
   // Initialisation du moteur pour l'environnement de test
@@ -22,7 +22,6 @@ void main() {
   });
 
   tearDown(() async {
-    final db = await dbHelper.database;
     await db.close();
   });
 
@@ -38,7 +37,8 @@ void main() {
         'name': 'Doom Eternal',
         'cover_url': 'https://image.com/doom.jpg',
         'summary': 'Rip and tear.',
-        'genre_id': 1,
+        'genre_id':
+            1, // Assure-toi que cette colonne existe bien dans ton schéma igdb_cache
         'updated_at': DateTime.now().toIso8601String(),
       });
 
@@ -57,9 +57,12 @@ void main() {
       expect(results.length, 1);
       final item = results.first;
 
+      // Correction de l'accès : item.game (entité locale) et item.details (cache IGDB)
       expect(item.game.displayName, 'Doom Eternal');
       expect(item.details, isNotNull);
       expect(item.details?.coverUrl, 'https://image.com/doom.jpg');
+
+      // C'est ici que ça échouait si la jointure n'était pas faite dans le Repo
       expect(item.details?.genre?.name, 'Action');
     });
 
@@ -77,14 +80,11 @@ void main() {
       // Assert
       expect(results.length, 1);
       expect(results.first.game.displayName, 'My Custom Script');
-      expect(
-        results.first.details,
-        isNull,
-      ); // La jointure doit renvoyer null sans crash
+      expect(results.first.details, isNull);
     });
 
     test('Should update existing game but keep same ID (Upsert)', () async {
-      // Arrange
+      // Arrange : Utilisation du même chemin d'exécutable pour simuler l'unicité
       const path = 'C:\\Games\\Solo.exe';
       final v1 = Game(displayName: 'Version 1', executablePath: path);
       final v2 = Game(displayName: 'Version 2', executablePath: path);
@@ -106,6 +106,7 @@ void main() {
         'name': 'Cyberpunk',
         'updated_at': '2026-02-19',
       });
+
       await gameRepo.upsertGame(
         Game(
           displayName: 'Cyberpunk 2077',
@@ -124,7 +125,7 @@ void main() {
       final games = await gameRepo.getAllGames();
       expect(games, isEmpty);
 
-      // Vérifier que le cache est toujours là (BYOK / Offline First logic)
+      // Vérifier que le cache est toujours là (indépendance des tables)
       final cache = await db.query(
         'igdb_cache',
         where: 'igdb_id = ?',
@@ -145,7 +146,7 @@ void main() {
       // Act
       final results = await gameRepo.getAllGames();
 
-      // Assert
+      // Assert : Vérification du tri alphabétique (ORDER BY)
       expect(results.first.game.displayName, 'A-Train');
       expect(results.last.game.displayName, 'Zelda');
     });

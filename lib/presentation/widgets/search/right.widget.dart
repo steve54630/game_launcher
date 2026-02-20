@@ -4,6 +4,7 @@ import 'package:game_launcher/core/theme/app.spacing.dart';
 import 'package:game_launcher/presentation/widgets/game_details/gallery.widget.dart';
 import 'package:game_launcher/presentation/widgets/search/game_search.widget.dart';
 import 'package:game_launcher/presentation/widgets/search/igdb_match.widget.dart';
+import 'package:game_launcher/presentation/widgets/search/import_button.widget.dart';
 import 'package:game_launcher/providers.dart';
 
 class RightImportSection extends ConsumerWidget {
@@ -82,7 +83,7 @@ class RightImportSection extends ConsumerWidget {
           ] else
             const Spacer(),
           const SizedBox(height: AppSpacing.m),
-          const _ImportActionButton(),
+          const ImportActionButton(),
         ],
       ),
     );
@@ -135,89 +136,6 @@ class _SectionHeader extends StatelessWidget {
             child: CircularProgressIndicator(strokeWidth: 2),
           ),
         ],
-      ],
-    );
-  }
-}
-
-class _ImportActionButton extends ConsumerWidget {
-  const _ImportActionButton();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(importProvider);
-    final notifier = ref.read(importProvider.notifier);
-
-    return Column(
-      children: [
-        if (state.errorMessage != null)
-          Padding(
-            padding: const EdgeInsets.only(bottom: AppSpacing.m),
-            child: _ErrorMessage(message: state.errorMessage!),
-          ),
-        SizedBox(
-          width: double.infinity,
-          height: 55,
-          child: ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: state.canImport
-                  ? null
-                  : Colors.grey.withAlpha(25),
-            ),
-            onPressed: state.canImport && !state.isSaving
-                ? () async {
-                    final success = await notifier.executeImport();
-                    if (success && context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text("Jeu ajouté avec succès !"),
-                          backgroundColor: Colors.green,
-                        ),
-                      );
-                      Navigator.of(context).pop();
-                    }
-                  }
-                : null,
-            child: state.isSaving
-                ? const SizedBox(
-                    height: 24,
-                    width: 24,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
-                    ),
-                  )
-                : const Text(
-                    "IMPORTER DANS LA BIBLIOTHÈQUE",
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _ErrorMessage extends StatelessWidget {
-  final String message;
-  const _ErrorMessage({required this.message});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        const Icon(Icons.error_outline, color: Colors.red, size: 16),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            message,
-            style: const TextStyle(
-              color: Colors.red,
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ),
       ],
     );
   }

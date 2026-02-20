@@ -13,4 +13,6 @@ abstract interface class IgdbRepository {
     int igdbId,
     IgdbCredentials credentials,
   );
+
+  Future<void> cacheGameResult(IgdbSearchResult game);
 }

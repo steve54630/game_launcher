@@ -75,6 +75,23 @@ class IgdbSearchResultModel extends IgdbSearchResult {
     );
   }
 
+  // Dans IgdbSearchResultModel
+  Map<String, dynamic> toCacheMap() {
+    return {
+      'igdb_id': igdbId,
+      'name': name,
+      'cover_url': coverUrl,
+      'summary': summary,
+      // SQLite ne stocke pas de listes, on sérialise en JSON String
+      'screenshot_urls': jsonEncode(screenshots),
+      'video_id': youtubeVideoId,
+      // Stockage au format ISO8601 pour faciliter les tris SQL
+      'release_date': releaseDate?.toIso8601String(),
+      'genre_id': genre?.id, // On enregistre l'ID pour la FK
+      'updated_at': DateTime.now().toIso8601String(),
+    };
+  }
+
   static String _parseImageUrl(String url) {
     if (url.startsWith('//')) {
       url = 'https:$url';
