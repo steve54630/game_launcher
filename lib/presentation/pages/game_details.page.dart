@@ -1,17 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:game_launcher/core/providers/usecase.providers.dart';
 import 'package:game_launcher/domain/model/game.model.dart';
 import 'package:game_launcher/presentation/widgets/game_details/gallery.widget.dart';
 import 'package:game_launcher/presentation/widgets/game_details/header.widget.dart';
 import '../../../core/theme/app.colors.dart';
 import '../../../core/theme/app.spacing.dart';
 
-class GameDetailsPage extends StatelessWidget {
+class GameDetailsPage extends ConsumerWidget {
   final GameWithDetails item;
 
   const GameDetailsPage({super.key, required this.item});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final meta = item.details;
     final game = item.game;
 
@@ -19,40 +21,38 @@ class GameDetailsPage extends StatelessWidget {
       backgroundColor: AppColors.background,
       body: CustomScrollView(
         slivers: [
+          // HEADER : Gère l'image de fond (Background)
           SliverPersistentHeader(
             pinned: true,
             delegate: GameDetailsHeader(
               title: meta?.name ?? game.displayName,
-              coverUrl: meta?.screenshots.firstOrNull,
+              // On passe le chemin brut, le Header utilisera SmartImage en interne
+              coverUrl: meta?.screenshots.firstOrNull ?? '',
               expandedHeight: 400,
             ),
           ),
+
+          // CONTENU : Description, Actions et Galerie
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.all(AppSpacing.l),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildActionButtons(context),
+                  _buildActionButtons(context, ref),
                   const SizedBox(height: AppSpacing.xl),
 
-                  Text(
-                    "À PROPOS",
-                    style: Theme.of(context).textTheme.labelLarge,
-                  ),
+                  _buildSectionHeader(context, "À PROPOS"),
                   const SizedBox(height: AppSpacing.s),
-                  Text(
-                    meta?.summary ?? "Aucune description disponible.",
-                    style: TextStyle(
-                      color: AppColors.textPrimary.withValues(alpha: 0.7),
-                      height: 1.6,
-                      fontSize: 15,
-                    ),
-                  ),
+                  _buildSummary(meta?.summary),
 
-                  if (meta?.screenshots.isNotEmpty ?? false) ...[
+                  if (meta?.screenshots != null &&
+                      meta!.screenshots.isNotEmpty) ...[
                     const SizedBox(height: AppSpacing.xl),
-                    GameScreenshotGallery(screenshots: meta!.screenshots),
+                    _buildSectionHeader(context, "GALERIE"),
+                    const SizedBox(height: AppSpacing.s),
+                    // La Galerie utilisera aussi SmartImage pour chaque miniature
+                    GameScreenshotGallery(screenshots: meta.screenshots),
                   ],
                 ],
               ),
@@ -63,28 +63,61 @@ class GameDetailsPage extends StatelessWidget {
     );
   }
 
-  Widget _buildActionButtons(BuildContext context) {
+  // --- Helper Widgets pour la clarté du code ---
+
+  Widget _buildSectionHeader(BuildContext context, String title) {
+    return Text(
+      title,
+      style: Theme.of(context).textTheme.labelLarge?.copyWith(
+        color: AppColors.textPrimary,
+        fontWeight: FontWeight.bold,
+        letterSpacing: 1.1,
+      ),
+    );
+  }
+
+  Widget _buildSummary(String? summary) {
+    return Text(
+      summary ?? "Aucune description disponible pour ce titre.",
+      style: TextStyle(
+        color: AppColors.textPrimary.withValues(alpha: 0.7),
+        height: 1.6,
+        fontSize: 15,
+      ),
+    );
+  }
+
+  Widget _buildActionButtons(BuildContext context, WidgetRef ref) {
     return Row(
       children: [
         Expanded(
           child: ElevatedButton.icon(
-            onPressed: () {},
+            onPressed: () async {
+              final launchSession = ref.read(launchGameSessionProvider);
+
+              // 2. Exécution
+              await launchSession.execute(item.game);
+            },
             icon: const Icon(Icons.play_arrow, size: 28),
             label: const Text("JOUER MAINTENANT"),
             style: ElevatedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 20),
-              textStyle: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
             ),
           ),
         ),
         const SizedBox(width: AppSpacing.m),
         IconButton.filledTonal(
-          onPressed: () {},
+          onPressed: () {
+            // Logique favoris
+          },
           icon: Icon(
             item.game.isFavorite ? Icons.favorite : Icons.favorite_border,
+            color: item.game.isFavorite ? Colors.redAccent : null,
           ),
           padding: const EdgeInsets.all(16),
         ),

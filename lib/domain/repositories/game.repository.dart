@@ -9,4 +9,6 @@ abstract interface class GameRepository {
 
   // Supprime un jeu (mais garde éventuellement le cache si tu veux)
   Future<void> deleteGame(int id);
+
+  Stream<List<Game>> watchAllGames();
 }

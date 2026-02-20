@@ -32,6 +32,7 @@ class IgdbSearchRepositoryImpl implements IgdbSearchRepository {
 
     if (response.statusCode != 200) throw HttpException("Search Failed");
     final List<dynamic> data = json.decode(response.body);
+    AppLogger.info("$data");
     return data.map((item) => _mapToSearchResult(item)).toList();
   }
 

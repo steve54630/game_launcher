@@ -15,9 +15,9 @@ final importProvider =
       return ImportNotifier();
     });
 
-final getGamesProvider = FutureProvider<List<GameWithDetails>>((ref) async {
+final getGamesProvider = StreamProvider<List<GameWithDetails>>((ref) {
   final repo = ref.watch(librairyUseCaseProvider);
-  return await repo.execute();
+  return repo.execute();
 });
 
 final igdbCredentialsProvider = FutureProvider<IgdbCredentials?>((ref) async {

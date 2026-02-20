@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:game_launcher/core/utils/logger.dart';
 import 'package:game_launcher/presentation/widgets/game_details/game_card.widget.dart';
 import '../../../../core/theme/app.spacing.dart';
 import '../../../../domain/model/game.model.dart';
@@ -24,8 +23,6 @@ class GameGridView extends StatelessWidget {
       itemBuilder: (context, index) {
         return GameCard(
           gameDetails: games[index],
-          onPlay: () =>
-              AppLogger.info("Lancer ${games[index].game.displayName}"),
           onShowDetails: () {
             Navigator.push(
               context,

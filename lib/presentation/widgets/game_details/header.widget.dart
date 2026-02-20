@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:game_launcher/presentation/widgets/common/smart_image.widget.dart';
 import '../../../../core/theme/app.colors.dart';
 
 class GameDetailsHeader extends SliverPersistentHeaderDelegate {
@@ -22,29 +23,19 @@ class GameDetailsHeader extends SliverPersistentHeaderDelegate {
     final double progress = shrinkOffset / (maxExtent - minExtent);
     final double currentOpacity = progress.clamp(0.0, 1.0);
 
-    // Correction de l'URL pour IGDB si nécessaire
-    final String? finalUrl = coverUrl?.startsWith('//') == true
-        ? 'https:$coverUrl'
-        : coverUrl;
-
     return Stack(
       fit: StackFit.expand,
       children: [
-        // 1. Image de fond avec filtre assombrissant
-        if (finalUrl != null)
-          Image.network(
-            finalUrl,
-            fit: BoxFit.cover,
-            // On assombrit l'image de base pour que le texte blanc ressorte toujours
-            color: Colors.black.withValues(alpha: 0.3),
-            colorBlendMode: BlendMode.darken,
-          )
-        else
-          Container(color: AppColors.surface),
+        // 1. Image de fond (SmartImage gère le switch Local/Réseau)
+        SmartImage(path: coverUrl, fit: BoxFit.cover),
 
-        // 2. Gradient dynamique (s'intensifie au scroll)
-        DecoratedBox(
+        // 2. Filtre d'assombrissement fixe + Gradient dynamique
+        // On sépare le filtre de l'image pour garder le contrôle sur SmartImage
+        Container(
           decoration: BoxDecoration(
+            color: Colors.black.withValues(
+              alpha: 0.3,
+            ), // Assombrit l'image de base
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
@@ -60,7 +51,6 @@ class GameDetailsHeader extends SliverPersistentHeaderDelegate {
         ),
 
         // 3. Titre animé (Taille et position)
-        // Il descend/monte et rétrécit selon le scroll pour finir en titre d'AppBar
         Align(
           alignment: Alignment.lerp(
             Alignment.bottomLeft,
@@ -77,7 +67,6 @@ class GameDetailsHeader extends SliverPersistentHeaderDelegate {
               style: TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
-                // Transition fluide de la taille du texte
                 fontSize: 32 - (currentOpacity * 12),
               ),
               maxLines: 1,
@@ -100,8 +89,7 @@ class GameDetailsHeader extends SliverPersistentHeaderDelegate {
   double get maxExtent => expandedHeight;
 
   @override
-  // On s'aligne sur la hauteur standard de l'AppBar + padding
-  double get minExtent => kToolbarHeight + 20;
+  double get minExtent => kToolbarHeight + 40; // Légèrement augmenté pour l'esthétique
 
   @override
   bool shouldRebuild(covariant GameDetailsHeader oldDelegate) {

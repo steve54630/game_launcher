@@ -16,19 +16,21 @@ class IgdbCacheRepositoryImpl implements IgdbCacheRepository {
     try {
       final db = await _dbHelper.database;
 
+      // 1. Gérer les screenshots
       List<String> localPaths = [];
       try {
-        for (var url in metadata.screenshots) {
-          final path = await ImageDownloaderService.downloadAndSaveImage(
-            url,
-            'game_${metadata.igdbId}',
-          );
-          if (path != null) localPaths.add(path);
+        if (metadata.screenshots.isNotEmpty) {
+          for (var url in metadata.screenshots) {
+            final path = await ImageDownloaderService.downloadAndSaveImage(
+              url,
+              'game_${metadata.igdbId}',
+            );
+            if (path != null) localPaths.add(path);
+          }
         }
       } catch (e) {
-        // On log l'erreur réseau mais on continue : le cache textuel est plus important que les images
         AppLogger.warning(
-          "Échec du téléchargement des images pour le jeu ${metadata.igdbId}: $e",
+          "Échec téléchargement images (ID: ${metadata.igdbId}): $e",
         );
       }
 
@@ -36,25 +38,38 @@ class IgdbCacheRepositoryImpl implements IgdbCacheRepository {
           ? localPaths
           : metadata.screenshots;
 
+      // 2. S'assurer que le genre existe avant d'insérer le cache
+      if (metadata.genre != null) {
+        await db.insert(
+          'genres',
+          {'id': metadata.genre!.id, 'name': metadata.genre!.name},
+          conflictAlgorithm:
+              ConflictAlgorithm.ignore, // On ne l'écrase pas s'il existe
+        );
+      }
+
+      // 3. Insertion avec vérification des données critiques
       await db.insert('igdb_cache', {
         'igdb_id': metadata.igdbId,
         'name': metadata.name,
-        'cover_url': metadata.coverUrl,
-        'summary': metadata.summary,
+        'cover_url': metadata.coverUrl ?? '', // Évite le NULL si possible
+        'summary': metadata.summary ?? 'Pas de description disponible.',
         'screenshot_urls': jsonEncode(finalScreenshots),
-        'genre_id': metadata.genre?.id,
+        'genre_id': metadata
+            .genre
+            ?.id, // Sera NULL si pas de genre, ce qui est géré par ton LEFT JOIN
         'updated_at': DateTime.now().toIso8601String(),
       }, conflictAlgorithm: ConflictAlgorithm.replace);
 
-      AppLogger.debug("Metadata IGDB mises en cache pour: ${metadata.name}");
+      AppLogger.debug("Cache IGDB validé pour: ${metadata.name}");
     } catch (e, stack) {
       AppLogger.error(
-        "Erreur lors de la mise en cache IGDB (ID: ${metadata.igdbId})",
+        "Erreur fatale cache IGDB (ID: ${metadata.igdbId})",
         e,
         stack,
       );
-      // On ne rethrow pas forcément ici pour éviter de bloquer l'import global du jeu
-      // car le cache n'est qu'un bonus de performance/confort.
+      // Ici, on pourrait rethrow car si le cache échoue, l'import est "sale"
+      rethrow;
     }
   }
 

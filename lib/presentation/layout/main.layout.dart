@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:game_launcher/presentation/pages/import_page.dart';
 import 'package:game_launcher/presentation/pages/library.page.dart';
-import 'package:game_launcher/presentation/widgets/connect.widget.dart';
-import 'package:game_launcher/presentation/widgets/menu.widget.dart';
+import 'package:game_launcher/presentation/widgets/common/connect.widget.dart';
+import 'package:game_launcher/presentation/widgets/common/menu.widget.dart';
 import 'dart:io';
 
 class MainLayout extends StatefulWidget {

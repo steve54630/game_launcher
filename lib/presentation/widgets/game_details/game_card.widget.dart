@@ -1,22 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:game_launcher/core/providers/usecase.providers.dart';
 import 'package:game_launcher/core/theme/app.colors.dart';
 import 'package:game_launcher/core/theme/app.spacing.dart';
 import 'package:game_launcher/domain/model/game.model.dart';
 
-class GameCard extends StatelessWidget {
+class GameCard extends ConsumerWidget {
   final GameWithDetails gameDetails;
-  final VoidCallback onPlay;
   final VoidCallback onShowDetails;
 
   const GameCard({
     super.key,
     required this.gameDetails,
-    required this.onPlay,
     required this.onShowDetails,
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final game = gameDetails.game;
     final details = gameDetails.details;
 
@@ -79,7 +79,14 @@ class GameCard extends StatelessWidget {
                           Expanded(
                             // On force le bouton à se réduire si besoin
                             child: ElevatedButton.icon(
-                              onPressed: onPlay,
+                              onPressed: () async {
+                                final launchSession = ref.read(
+                                  launchGameSessionProvider,
+                                );
+
+                                // 2. Exécution
+                                await launchSession.execute(game);
+                              },
                               icon: const Icon(Icons.play_arrow, size: 18),
                               label: const Text(
                                 "JOUER",
