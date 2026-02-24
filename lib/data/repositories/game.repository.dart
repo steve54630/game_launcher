@@ -128,12 +128,16 @@ class GameRepositoryImpl implements GameRepository {
   }
 
   @override
-  Future<void> deleteGame(int id) async {
+  Future<void> deleteGame(Game game) async {
     try {
       final db = await dbHelper.database;
-      AppLogger.warning("GameRepository: Suppression du jeu ID: $id");
+      AppLogger.warning("GameRepository: Suppression du jeu ID: ${game.id}");
 
-      final count = await db.delete('games', where: 'id = ?', whereArgs: [id]);
+      final count = await db.delete(
+        'games',
+        where: 'id = ?',
+        whereArgs: [game.id],
+      );
 
       if (count > 0) {
         AppLogger.info(
@@ -142,12 +146,12 @@ class GameRepositoryImpl implements GameRepository {
         await _refreshStream();
       } else {
         AppLogger.warning(
-          "GameRepository: Aucun jeu trouvé avec l'ID $id pour la suppression.",
+          "GameRepository: Aucun jeu trouvé avec l'ID ${game.id} pour la suppression.",
         );
       }
     } catch (e, stack) {
       AppLogger.error(
-        "GameRepository: Erreur lors de la suppression du jeu ID $id",
+        "GameRepository: Erreur lors de la suppression du jeu ID ${game.id}",
         e,
         stack,
       );

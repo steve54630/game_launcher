@@ -17,10 +17,14 @@ class _LeftImportSectionState extends ConsumerState<LeftImportSection> {
   @override
   void initState() {
     super.initState();
-    // On initialise avec la valeur actuelle du state au chargement
-    _nameController = TextEditingController(
-      text: ref.read(importProvider).displayName ?? "",
-    );
+    _nameController = TextEditingController();
+
+    Future.microtask(() {
+      if (mounted) {
+        final initialValue = ref.read(importProvider).displayName ?? "";
+        _nameController.text = initialValue;
+      }
+    });
   }
 
   @override
@@ -31,15 +35,12 @@ class _LeftImportSectionState extends ConsumerState<LeftImportSection> {
 
   @override
   Widget build(BuildContext context) {
-    // ÉCOUTEUR : On surveille le changement de displayName
-    // Dès que selectGameFile() change le nom dans le state, ce callback s'exécute
     ref.listen<String?>(importProvider.select((s) => s.displayName), (
       previous,
       next,
     ) {
       if (next != null && next != _nameController.text) {
         _nameController.text = next;
-        // On s'assure que le curseur est bien placé
         _nameController.selection = TextSelection.fromPosition(
           TextPosition(offset: _nameController.text.length),
         );

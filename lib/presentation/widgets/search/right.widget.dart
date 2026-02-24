@@ -1,34 +1,73 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:game_launcher/core/providers/ui.providers.dart';
+import 'package:game_launcher/core/providers/usecase.providers.dart';
 import 'package:game_launcher/core/theme/app.spacing.dart';
+import 'package:game_launcher/domain/entities/search_result.entity.dart';
 import 'package:game_launcher/presentation/widgets/common/gallery.widget.dart';
 import 'package:game_launcher/presentation/widgets/common/video_preview.widget.dart';
 import 'package:game_launcher/presentation/widgets/search/game_search.widget.dart';
 import 'package:game_launcher/presentation/widgets/search/igdb_match.widget.dart';
 import 'package:game_launcher/presentation/widgets/search/import_button.widget.dart';
+import 'package:game_launcher/presentation/widgets/search/left/detail.widget.dart';
+import 'package:game_launcher/presentation/widgets/search/left/header.widget.dart';
 
 class RightImportSection extends ConsumerWidget {
   const RightImportSection({super.key});
 
+  static const labelStyle = TextStyle(
+    fontWeight: FontWeight.bold,
+    fontSize: 12,
+    color: Colors.white54,
+  );
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.listen<AsyncValue<List<IgdbSearchResult>>>(igdbResultsProvider, (
+      previous,
+      next,
+    ) {
+      final state = ref.read(importProvider);
+      final notifier = ref.read(importProvider.notifier);
+
+      // Si le champ de texte est vide, on reset les erreurs et on arrête
+      if (state.displayName == null || state.displayName!.trim().isEmpty) {
+        notifier.setErrorMessage(null);
+        return;
+      }
+
+      next.when(
+        data: (results) {
+          if (results.isEmpty) {
+            notifier.setErrorMessage("Aucun jeu trouvé sur IGDB.");
+          } else {
+            notifier.setErrorMessage(null);
+            if (state.selectedIgdbGame == null) {
+              notifier.setIgdbMatch(results.first);
+            }
+          }
+        },
+        error: (err, stack) {
+          notifier.setErrorMessage("Erreur technique IGDB.");
+        },
+        loading: () {},
+      );
+    });
+
     final state = ref.watch(importProvider);
     final game = state.selectedIgdbGame;
+    final searchAsync = ref.watch(igdbResultsProvider);
 
     return Padding(
       padding: const EdgeInsets.all(AppSpacing.xl),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _SectionHeader(
+          SectionHeader(
             title: "3. LIAISON IGDB",
-            isLoading: state.isSearching,
+            isLoading: searchAsync.isLoading,
           ),
           const SizedBox(height: AppSpacing.m),
-
-          // On utilise Expanded ici pour que la zone de contenu prenne toute la place
-          // mais laisse le bouton ImportActionButton fixe en bas.
           Expanded(
             child: SingleChildScrollView(
               child: Column(
@@ -42,38 +81,31 @@ class RightImportSection extends ConsumerWidget {
                       builder: (_) => const Dialog(child: SearchGameModal()),
                     ),
                   ),
-
                   if (game != null) ...[
                     const SizedBox(height: AppSpacing.l),
-
                     if (game.screenshots.isNotEmpty) ...[
                       GameScreenshotGallery(screenshots: game.screenshots),
                       const SizedBox(height: AppSpacing.l),
                     ],
-
                     const Divider(color: Colors.white10),
                     const SizedBox(height: AppSpacing.l),
-
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _DetailInfo(
+                        DetailInfo(
                           label: "Sortie",
-                          // Petit tips : formatte la date si possible
                           value: game.releaseDate != null
                               ? "${game.releaseDate!.day}/${game.releaseDate!.month}/${game.releaseDate!.year}"
                               : "Inconnue",
                         ),
                         const SizedBox(width: AppSpacing.xl),
                         if (game.genre != null)
-                          _DetailInfo(label: "Genre", value: game.genre!.name),
+                          DetailInfo(label: "Genre", value: game.genre!.name),
                       ],
                     ),
-
                     const SizedBox(height: AppSpacing.l),
-                    const Text("SYNOPSIS", style: _labelStyle),
+                    const Text("SYNOPSIS", style: labelStyle),
                     const SizedBox(height: AppSpacing.s),
-
                     Text(
                       game.summary ?? "Aucune description disponible.",
                       style: const TextStyle(
@@ -82,10 +114,9 @@ class RightImportSection extends ConsumerWidget {
                         height: 1.5,
                       ),
                     ),
-                    // On ajoute un peu d'espace en bas du scroll pour ne pas coller au bouton
                     const SizedBox(height: AppSpacing.s),
                     if (game.youtubeVideoId != null) ...[
-                      const Text("PREVIEW", style: _labelStyle),
+                      const Text("PREVIEW", style: labelStyle),
                       GameVideoPreview(youtubeVideoId: game.youtubeVideoId!),
                     ],
                   ],
@@ -93,62 +124,10 @@ class RightImportSection extends ConsumerWidget {
               ),
             ),
           ),
-
           const SizedBox(height: AppSpacing.m),
           const ImportActionButton(),
         ],
       ),
-    );
-  }
-}
-
-const _labelStyle = TextStyle(
-  fontSize: 11,
-  fontWeight: FontWeight.bold,
-  color: Colors.white38,
-  letterSpacing: 1.2,
-);
-
-class _DetailInfo extends StatelessWidget {
-  final String label;
-  final String value;
-  const _DetailInfo({required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label.toUpperCase(), style: _labelStyle),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-        ),
-      ],
-    );
-  }
-}
-
-class _SectionHeader extends StatelessWidget {
-  final String title;
-  final bool isLoading;
-  const _SectionHeader({required this.title, this.isLoading = false});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-        if (isLoading) ...[
-          const SizedBox(width: AppSpacing.m),
-          const SizedBox(
-            height: 14,
-            width: 14,
-            child: CircularProgressIndicator(strokeWidth: 2),
-          ),
-        ],
-      ],
     );
   }
 }

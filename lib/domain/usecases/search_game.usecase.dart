@@ -3,11 +3,11 @@ import 'package:game_launcher/domain/repositories/credentails.repository.dart';
 import 'package:game_launcher/domain/repositories/igbd.repository.dart';
 import 'package:game_launcher/core/utils/logger.dart';
 
-class SearchGameMetadata {
-  final IgdbSearchRepository repository;
+class SearchGameUseCase {
+  final IgdbRepository repository;
   final CredentialsRepository credentialsRepository;
 
-  SearchGameMetadata(this.repository, this.credentialsRepository);
+  SearchGameUseCase(this.repository, this.credentialsRepository);
 
   Future<List<IgdbSearchResult>> execute(String query) async {
     AppLogger.info(

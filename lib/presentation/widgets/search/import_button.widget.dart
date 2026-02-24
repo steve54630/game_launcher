@@ -29,7 +29,10 @@ class ImportActionButton extends ConsumerWidget {
             ),
             onPressed: state.canImport && !state.isSaving
                 ? () async {
+                    // On appelle executeImport sans argument car le notifier
+                    // possède déjà le selectedIgdbGame dans son state.
                     final success = await notifier.executeImport();
+
                     if (success && context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(

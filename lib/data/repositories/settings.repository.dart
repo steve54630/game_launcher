@@ -12,6 +12,7 @@ class AppSettingsRepositoryImpl implements AppSettingsRepository {
     'minimize_on_launch',
     'close_on_exit',
     'theme_mode',
+    'card',
   ];
 
   AppSettingsRepositoryImpl(this.dbHelper);
@@ -61,6 +62,7 @@ class AppSettingsRepositoryImpl implements AppSettingsRepository {
         minimizeOnLaunch: settings.minimizeOnLaunch,
         closeOnExit: settings.closeOnExit,
         themeMode: settings.themeMode,
+        libraryDisplayMode: settings.libraryDisplayMode,
       );
 
       final rows = model.toDbRows();

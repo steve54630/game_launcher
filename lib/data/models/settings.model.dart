@@ -5,10 +5,9 @@ class SettingsModel extends AppSettings {
     required super.minimizeOnLaunch,
     required super.closeOnExit,
     required super.themeMode,
+    required super.libraryDisplayMode,
   });
 
-  /// Transforme une liste de lignes SQLite [ {key: '...', value: '...'}, ... ]
-  /// en un objet AppSettings structuré.
   factory SettingsModel.fromDbRows(List<Map<String, dynamic>> rows) {
     final settingsMap = {for (var row in rows) row['key']: row['value']};
 
@@ -16,15 +15,30 @@ class SettingsModel extends AppSettings {
       minimizeOnLaunch: settingsMap['minimize_on_launch'] == 'true',
       closeOnExit: settingsMap['close_on_exit'] == 'true',
       themeMode: settingsMap['theme_mode'] ?? 'system',
+      libraryDisplayMode: settingsMap['library_display_mode'] ?? 'card',
     );
   }
 
-  /// Prépare une liste de Maps pour insertion/mise à jour individuelle
+  SettingsModel copyWith({
+    bool? minimizeOnLaunch,
+    bool? closeOnExit,
+    String? themeMode,
+    String? libraryDisplayMode,
+  }) {
+    return SettingsModel(
+      minimizeOnLaunch: minimizeOnLaunch ?? this.minimizeOnLaunch,
+      closeOnExit: closeOnExit ?? this.closeOnExit,
+      themeMode: themeMode ?? this.themeMode,
+      libraryDisplayMode: libraryDisplayMode ?? this.libraryDisplayMode,
+    );
+  }
+
   List<Map<String, dynamic>> toDbRows() {
     return [
       {'key': 'minimize_on_launch', 'value': minimizeOnLaunch.toString()},
       {'key': 'close_on_exit', 'value': closeOnExit.toString()},
       {'key': 'theme_mode', 'value': themeMode},
+      {'key': 'library_display_mode', 'value': libraryDisplayMode},
     ];
   }
 }

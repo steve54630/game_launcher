@@ -84,10 +84,10 @@ void main() {
         Game(displayName: 'To Delete', executablePath: 'del.exe'),
       );
       var list = await gameRepo.getAllGames();
-      final id = list.first.id!;
+      final game = list.first;
 
       // Act
-      await gameRepo.deleteGame(id);
+      await gameRepo.deleteGame(game);
       final results = await gameRepo.getAllGames();
 
       // Assert

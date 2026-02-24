@@ -11,11 +11,13 @@ import 'package:game_launcher/presentation/widgets/game_details/card/release.wid
 class GameCard extends ConsumerWidget {
   final GameWithDetails gameDetails;
   final VoidCallback onShowDetails;
+  final VoidCallback onDelete;
 
   const GameCard({
     super.key,
     required this.gameDetails,
     required this.onShowDetails,
+    required this.onDelete,
   });
 
   @override
@@ -91,21 +93,59 @@ class GameCard extends ConsumerWidget {
   }
 
   Widget _buildActionButtons(WidgetRef ref, dynamic game) {
-    return Row(
+    final secondaryButtonStyle = OutlinedButton.styleFrom(
+      textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+      padding: const EdgeInsets.symmetric(vertical: 8),
+    );
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Expanded(
+        // Ligne 1 : Action principale (Pleine largeur)
+        SizedBox(
+          width: double.infinity,
           child: ElevatedButton.icon(
             onPressed: () => ref.read(launchGameSessionProvider).execute(game),
-            icon: const Icon(Icons.play_arrow, size: 18),
-            label: const Text("JOUER", overflow: TextOverflow.ellipsis),
+            icon: const Icon(Icons.play_arrow, size: 20),
+            label: const Text("JOUER"),
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              shadowColor: Colors.lightGreen,
+              backgroundColor: Colors.green,
+            ),
           ),
         ),
-        const SizedBox(width: AppSpacing.s),
-        Expanded(
-          child: OutlinedButton(
-            onPressed: onShowDetails,
-            child: const Text("DÉTAILS", overflow: TextOverflow.ellipsis),
-          ),
+        const SizedBox(height: AppSpacing.s),
+
+        // Ligne 2 : Actions secondaires (Partage de ligne)
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: onShowDetails,
+                style: secondaryButtonStyle.copyWith(
+                  foregroundColor: WidgetStateProperty.all(Colors.blueAccent),
+                  side: WidgetStateProperty.all(
+                    const BorderSide(color: Colors.blueAccent, width: 0.5),
+                  ),
+                ),
+                child: const Text("DÉTAILS"),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.s),
+            Expanded(
+              child: OutlinedButton(
+                onPressed: onDelete,
+                style: secondaryButtonStyle.copyWith(
+                  foregroundColor: WidgetStateProperty.all(Colors.redAccent),
+                  side: WidgetStateProperty.all(
+                    const BorderSide(color: Colors.redAccent, width: 0.5),
+                  ),
+                ),
+                child: const Text("SUPPRIMER"),
+              ),
+            ),
+          ],
         ),
       ],
     );

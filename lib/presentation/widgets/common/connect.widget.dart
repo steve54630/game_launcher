@@ -78,7 +78,7 @@ class _IgdbAuthModalState extends ConsumerState<IgdbAuthModal> {
 
             // 2. On effectue l'opération asynchrone
             await ref
-                .read(settingsProvider.notifier)
+                .read(editCredentialsProvider.notifier)
                 .saveCredentials(clientId, clientSecret);
 
             // 3. On capture le Navigator et le ScaffoldMessenger AVANT le check mounted

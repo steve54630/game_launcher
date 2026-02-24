@@ -6,9 +6,10 @@ import 'package:game_launcher/domain/entities/credentials.entity.dart';
 import 'package:game_launcher/domain/model/game.model.dart';
 import 'package:game_launcher/presentation/notifiers/credentials.notifier.dart';
 import 'package:game_launcher/presentation/notifiers/import.notifier.dart';
+import 'package:game_launcher/presentation/notifiers/import.state.dart';
 
-final settingsProvider = NotifierProvider<SettingsNotifier, void>(() {
-  return SettingsNotifier();
+final editCredentialsProvider = NotifierProvider<CredentialsNotifier, void>(() {
+  return CredentialsNotifier();
 });
 
 final importProvider =

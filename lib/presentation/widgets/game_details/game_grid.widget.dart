@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:game_launcher/presentation/widgets/game_details/delete_game.widget.dart';
 import 'package:game_launcher/presentation/widgets/game_details/game_card.widget.dart';
 import '../../../../core/theme/app.spacing.dart';
 import '../../../../domain/model/game.model.dart';
@@ -31,6 +32,7 @@ class GameGridView extends StatelessWidget {
               ),
             );
           },
+          onDelete: () => DeleteGameDialog.show(context, games[index].game),
         );
       },
     );

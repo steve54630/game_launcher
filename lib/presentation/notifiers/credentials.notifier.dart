@@ -3,7 +3,7 @@ import 'package:game_launcher/core/providers/repository.providers.dart';
 import 'package:game_launcher/domain/entities/credentials.entity.dart';
 import 'package:game_launcher/core/utils/logger.dart';
 
-class SettingsNotifier extends Notifier<void> {
+class CredentialsNotifier extends Notifier<void> {
   @override
   void build() {
     // Rien à initialiser ici pour le moment

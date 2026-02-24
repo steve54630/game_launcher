@@ -25,6 +25,7 @@ void main() {
       expect(settings.minimizeOnLaunch, true);
       expect(settings.closeOnExit, false);
       expect(settings.themeMode, 'system');
+      expect(settings.libraryDisplayMode, 'card');
     });
 
     test('Should save and retrieve settings correctly', () async {
@@ -32,6 +33,7 @@ void main() {
         minimizeOnLaunch: false,
         closeOnExit: true,
         themeMode: 'dark',
+        libraryDisplayMode: 'cover',
       );
 
       await repository.updateSettings(newSettings);
@@ -40,6 +42,7 @@ void main() {
       expect(retrieved.minimizeOnLaunch, false);
       expect(retrieved.closeOnExit, true);
       expect(retrieved.themeMode, 'dark');
+      expect(retrieved.libraryDisplayMode, 'cover');
     });
 
     test('Should reset only UI settings and keep others (simulated)', () async {
@@ -54,6 +57,7 @@ void main() {
         minimizeOnLaunch: false,
         closeOnExit: true,
         themeMode: 'dark',
+        libraryDisplayMode: 'grid',
       );
       await repository.updateSettings(customSettings);
 

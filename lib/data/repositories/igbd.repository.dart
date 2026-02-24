@@ -6,7 +6,7 @@ import 'package:game_launcher/domain/entities/credentials.entity.dart';
 import 'package:game_launcher/domain/entities/search_result.entity.dart';
 import 'package:game_launcher/domain/entities/igbd_genre.entity.dart';
 
-class IgdbSearchRepositoryImpl implements IgdbSearchRepository {
+class IgdbSearchRepositoryImpl implements IgdbRepository {
   final Dio _dio;
   final String _baseUrl = "https://api.igdb.com/v4";
   final String _authUrl = "https://id.twitch.tv/oauth2/token";

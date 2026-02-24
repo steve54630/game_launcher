@@ -1,7 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:game_launcher/data/repositories/process.repository.dart';
 import 'package:game_launcher/data/repositories/settings.repository.dart';
+import 'package:game_launcher/data/utils/file_picker.dart';
 import 'package:game_launcher/domain/repositories/credentails.repository.dart';
+import 'package:game_launcher/domain/repositories/file_picker.repository.dart';
 import 'package:game_launcher/domain/repositories/game.repository.dart';
 import 'package:game_launcher/domain/repositories/igbd.repository.dart';
 import 'package:game_launcher/domain/repositories/igbd_cache.repository.dart';
@@ -21,7 +23,7 @@ final igdbCacheProvider = Provider<IgdbCacheRepository>((ref) {
   return IgdbCacheRepositoryImpl(ref.watch(databaseHelperProvider));
 });
 
-final igdbSearchProvider = Provider<IgdbSearchRepository>((ref) {
+final igdbSearchProvider = Provider<IgdbRepository>((ref) {
   return IgdbSearchRepositoryImpl();
 });
 
@@ -35,4 +37,8 @@ final processProvider = Provider<ProcessRepository>((ref) {
 
 final appSettingsProvider = Provider<AppSettingsRepository>((ref) {
   return AppSettingsRepositoryImpl(ref.watch(databaseHelperProvider));
+});
+
+final filePickerService = Provider<IFilePickerService>((ref) {
+  return FilePickerService();
 });

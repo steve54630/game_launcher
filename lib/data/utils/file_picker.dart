@@ -1,16 +1,13 @@
 import 'package:file_picker/file_picker.dart';
+import 'package:game_launcher/domain/repositories/file_picker.repository.dart';
 
-class FilePickerService {
-  static Future<String?> pickExecutable() async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles(
+class FilePickerService implements IFilePickerService {
+  @override
+  Future<String?> pickExecutable() async {
+    final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
-      allowedExtensions: ['exe'], // On limite aux exécutables
-      dialogTitle: 'Sélectionner l\'exécutable du jeu',
+      allowedExtensions: ['exe', 'sh', 'app'],
     );
-
-    if (result != null && result.files.single.path != null) {
-      return result.files.single.path;
-    }
-    return null;
+    return result?.files.single.path;
   }
 }
