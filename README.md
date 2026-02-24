@@ -63,11 +63,15 @@ lib/
 
 Le launcher utilise un pipeline d'importation sécurisé :
 
-Scan : Exploration des répertoires via le ProcessRepository.
+### Scan :
 
-Match : Recherche asynchrone sur l'API IGDB avec gestion du token OAuth2 Twitch.
+Exploration des répertoires via le ProcessRepository.
 
-Persistance Hybride :
+### Match :
+
+Recherche asynchrone sur l'API IGDB avec gestion du token OAuth2 Twitch.
+
+### Persistance Hybride :
 
 Sauvegarde des données de jeu en SQLite.
 
@@ -75,7 +79,9 @@ Téléchargement parallèle des images vers le stockage local (ApplicationSuppor
 
 Chiffrement des identifiants API via FlutterSecureStorage.
 
-Notification : Mise à jour automatique de la vue via le StreamProvider de la bibliothèque.
+### Notification :
+
+Mise à jour automatique de la vue via le StreamProvider de la bibliothèque.
 
 ---
 
