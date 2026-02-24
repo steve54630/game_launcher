@@ -24,26 +24,25 @@ class IgdbCacheRepositoryImpl implements IgdbCacheRepository {
       List<String> localPaths = [];
       if (metadata.screenshots.isNotEmpty) {
         AppLogger.info(
-          "IgdbCache: Tentative de téléchargement de ${metadata.screenshots.length} screenshots...",
+          "IgdbCache: Téléchargement parallèle de ${metadata.screenshots.length} screenshots...",
         );
-        try {
-          for (var url in metadata.screenshots) {
-            final path = await ImageDownloaderService.downloadAndSaveImage(
+
+        final downloadTasks = metadata.screenshots.map((url) async {
+          try {
+            return await ImageDownloaderService.downloadAndSaveImage(
               url,
               'game_${metadata.igdbId}',
             );
-            if (path != null) {
-              localPaths.add(path);
-            }
+          } catch (e) {
+            AppLogger.warning(
+              "IgdbCache: Échec téléchargement image ($url): $e",
+            );
+            return null; // On retourne null pour filtrer après
           }
-          AppLogger.info(
-            "IgdbCache: ${localPaths.length} images sauvegardées localement.",
-          );
-        } catch (e) {
-          AppLogger.warning(
-            "IgdbCache: Échec partiel du téléchargement images (ID: ${metadata.igdbId}): $e",
-          );
-        }
+        });
+
+        final results = await Future.wait(downloadTasks);
+        localPaths = results.whereType<String>().toList();
       }
 
       final finalScreenshots = localPaths.isNotEmpty
@@ -153,28 +152,18 @@ class IgdbCacheRepositoryImpl implements IgdbCacheRepository {
 
   @override
   Future<void> deleteFromCache(int igdbId) async {
-    AppLogger.warning("IgdbCache: Suppression du cache pour ID: $igdbId");
     try {
       final db = await _dbHelper.database;
-      final count = await db.delete(
-        'igdb_cache',
-        where: 'igdb_id = ?',
-        whereArgs: [igdbId],
-      );
 
-      if (count > 0) {
-        AppLogger.info("IgdbCache: Cache supprimé avec succès.");
-      } else {
-        AppLogger.debug(
-          "IgdbCache: Rien à supprimer, le cache était déjà vide.",
-        );
-      }
+      // 1. Suppression physique des fichiers
+      await ImageDownloaderService.deleteFolder('game_$igdbId');
+
+      // 2. Suppression SQL
+      await db.delete('igdb_cache', where: 'igdb_id = ?', whereArgs: [igdbId]);
+
+      AppLogger.info("IgdbCache: Nettoyage complet réussi pour ID: $igdbId");
     } catch (e, stack) {
-      AppLogger.error(
-        "IgdbCache: Erreur lors de la suppression (ID: $igdbId)",
-        e,
-        stack,
-      );
+      AppLogger.error("IgdbCache: Erreur lors de la suppression", e, stack);
       rethrow;
     }
   }

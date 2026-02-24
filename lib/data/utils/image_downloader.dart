@@ -14,24 +14,47 @@ class ImageDownloaderService {
     try {
       if (url.isEmpty) return null;
 
-      final appDir = await getApplicationSupportDirectory();
-      // On crée le dossier s'il n'existe pas
-      final saveDir = Directory(p.join(appDir.path, 'media', folderName));
-      if (!await saveDir.exists()) await saveDir.create(recursive: true);
+      // Nettoyage de l'URL IGDB (forcer le HTTPS si nécessaire et haute résolution)
+      final cleanUrl = url.startsWith('//') ? 'https:$url' : url;
 
-      final fileName = p.basename(Uri.parse(url).path);
+      final appDir = await getApplicationSupportDirectory();
+      final saveDir = Directory(p.join(appDir.path, 'media', folderName));
+
+      if (!await saveDir.exists()) {
+        await saveDir.create(recursive: true);
+      }
+
+      final fileName = p.basename(Uri.parse(cleanUrl).path);
       final savePath = p.join(saveDir.path, fileName);
 
-      // Téléchargement direct vers le fichier
-      final response = await _dio.download(url, savePath);
+      final response = await _dio.download(cleanUrl, savePath);
 
       if (response.statusCode == 200) {
         return savePath;
       }
       return null;
     } catch (e) {
-      AppLogger.error("Échec du téléchargement Dio: $url", e);
+      AppLogger.error("ImageDownloader: Échec du téléchargement: $url", e);
       return null;
+    }
+  }
+
+  static Future<void> deleteFolder(String folderName) async {
+    try {
+      final appDir = await getApplicationSupportDirectory();
+      final dir = Directory(p.join(appDir.path, 'media', folderName));
+
+      if (await dir.exists()) {
+        AppLogger.warning(
+          "ImageDownloader: Suppression physique du dossier media/$folderName",
+        );
+        await dir.delete(recursive: true);
+      }
+    } catch (e) {
+      AppLogger.error(
+        "ImageDownloader: Erreur lors de la suppression du dossier $folderName",
+        e,
+      );
     }
   }
 }

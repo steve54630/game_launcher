@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/legacy.dart';
-import 'package:game_launcher/domain/model/game.model.dart';
+import 'package:game_launcher/domain/entities/game_details.entity.dart';
 
 enum LibrarySortType { name, releaseDate, genre }
 

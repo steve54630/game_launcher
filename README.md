@@ -9,16 +9,19 @@ Un lanceur de jeux vidéo moderne pour Windows, conçu avec **Flutter** en respe
 Le projet suit une structure en couches pour garantir l'indépendance du code métier vis-à-vis des outils techniques (BDD, API, OS).
 
 ### 1. Domain (Le Coeur)
+
 - **Entities** : Objets métier immuables (ex: `Game`, `DiscoveryResult`). Utilisation systématique du pattern `copyWith`.
 - **Repositories** : Interfaces abstraites définissant les contrats de données et de services.
 - **Use Cases** : Orchestration de la logique métier (ex: `LaunchGame`, `ScanLibrarySource`).
 
 ### 2. Data (L'implémentation)
+
 - **Models** : Extensions des entités gérant le mapping JSON/SQL.
 - **DataSources** : Implémentations techniques (SQLite pour la persistance, `Process` pour l'OS, `http` pour IGDB).
 - **Mappers** : Conversion entre le `snake_case` (BDD/API) et le `camelCase` (Dart).
 
 ### 3. Presentation
+
 - UI construite avec Flutter, pilotée par les Use Cases.
 
 ---
@@ -36,28 +39,43 @@ Le projet suit une structure en couches pour garantir l'indépendance du code m�
 
 ```text
 lib/
+├── core/
+│   ├── providers/      # Injection de dépendances (Repository, UseCase, UI)
+│   ├── theme/          # Design System (Colors, Spacing, Theme)
+│   └── utils/          # DatabaseHelper, Logger, Extensions
 ├── domain/
-│   ├── entities/       # Game, DiscoveryResult, IgdbCredentials...
-│   ├── repositories/   # Interfaces (GameRepository, ProcessRepository...)
-│   └── usecases/       # Actions (AddGamesToLibrary, LaunchGame...)
+│   ├── entities/       # Game, SearchResult, Credentials (Immuables)
+│   ├── repositories/   # Interfaces (Contrats)
+│   └── usecases/       # Logique métier (SaveGame, SearchGame...)
 ├── data/
-│   ├── models/         # Mapping SQL/JSON (fromMap, toMap)
-│   ├── datasources/    # SQLite Helper, IGDB Client, System Explorer
-│   └── repositories/   # Implémentations réelles des contrats
-└── presentation/       # Widgets & State Management (BLoC/Provider/Signals)
+│   ├── models/         # DTO & Mappers (fromMap, toMap)
+│   ├── repositories/   # Implémentations (SQL, API, SecureStorage)
+│   └── utils/          # ImageDownloader, QueryBuilder
+└── presentation/
+    ├── notifiers/      # Riverpod Notifiers & States
+    ├── pages/          # Écrans principaux (Library, Import, Details)
+    └── widgets/        # Composants UI découpés par domaine
 ```
 
 ---
 
-## 🚀 Workflow d'Importation
+## 🚀 Workflow d'Importation & Enrichissement
 
-Le launcher ne peuple pas la base de données automatiquement pour éviter les erreurs.
+Le launcher utilise un pipeline d'importation sécurisé :
 
-Scan : Le ProcessRepository explore un dossier et retourne des DiscoveryResult.
+Scan : Exploration des répertoires via le ProcessRepository.
 
-Review : L'utilisateur visualise les candidats (nom détecté + score de confiance).
+Match : Recherche asynchrone sur l'API IGDB avec gestion du token OAuth2 Twitch.
 
-Validation : Les jeux sélectionnés sont convertis en entités Game et persistés via le GameRepository.
+Persistance Hybride :
+
+Sauvegarde des données de jeu en SQLite.
+
+Téléchargement parallèle des images vers le stockage local (ApplicationSupportDirectory).
+
+Chiffrement des identifiants API via FlutterSecureStorage.
+
+Notification : Mise à jour automatique de la vue via le StreamProvider de la bibliothèque.
 
 ---
 
@@ -70,6 +88,7 @@ Validation : Les jeux sélectionnés sont convertis en entités Game et persist�
 - Environnement de développement Windows Desktop
 
 ### Clés IGDB
+
 Pour l'enrichissement automatique des métadonnées, vous devez configurer vos identifiants Twitch Developer :
 
 - Client ID

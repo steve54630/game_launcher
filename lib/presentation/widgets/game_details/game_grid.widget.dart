@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:game_launcher/presentation/widgets/game_details/delete_game.widget.dart';
 import 'package:game_launcher/presentation/widgets/game_details/game_card.widget.dart';
 import '../../../../core/theme/app.spacing.dart';
-import '../../../../domain/model/game.model.dart';
+import '../../../domain/entities/game_details.entity.dart';
 import '../../pages/game_details.page.dart';
 
 class GameGridView extends StatelessWidget {

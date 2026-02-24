@@ -1,4 +1,4 @@
-import 'package:game_launcher/domain/model/game.model.dart';
+import 'package:game_launcher/domain/entities/game_details.entity.dart';
 import 'package:game_launcher/domain/repositories/game.repository.dart';
 import 'package:game_launcher/domain/repositories/igbd_cache.repository.dart';
 import 'package:game_launcher/core/utils/logger.dart';

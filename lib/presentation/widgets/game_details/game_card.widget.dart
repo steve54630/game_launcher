@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:game_launcher/core/providers/usecase.providers.dart';
 import 'package:game_launcher/core/theme/app.colors.dart';
 import 'package:game_launcher/core/theme/app.spacing.dart';
-import 'package:game_launcher/domain/model/game.model.dart';
+import 'package:game_launcher/domain/entities/game_details.entity.dart';
 import 'package:game_launcher/presentation/widgets/game_details/card/cover.widget.dart';
 import 'package:game_launcher/presentation/widgets/game_details/card/genre.widget.dart';
 import 'package:game_launcher/presentation/widgets/game_details/card/release.widget.dart';

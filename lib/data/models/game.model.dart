@@ -1,7 +1,7 @@
 import 'package:game_launcher/domain/entities/game.entity.dart';
 import 'package:game_launcher/domain/entities/igbd_genre.entity.dart';
 import 'package:game_launcher/domain/entities/search_result.entity.dart';
-import 'package:game_launcher/domain/model/game.model.dart';
+import 'package:game_launcher/domain/entities/game_details.entity.dart';
 
 class GameModel extends Game {
   GameModel({

@@ -4,7 +4,7 @@ import 'package:game_launcher/core/providers/usecase.providers.dart';
 import 'package:game_launcher/core/utils/logger.dart';
 import 'package:game_launcher/domain/entities/game.entity.dart';
 import 'package:game_launcher/domain/entities/search_result.entity.dart';
-import 'package:game_launcher/domain/model/game.model.dart';
+import 'package:game_launcher/domain/entities/game_details.entity.dart';
 import 'package:game_launcher/presentation/notifiers/import.state.dart';
 
 class ImportNotifier extends Notifier<ImportState> {

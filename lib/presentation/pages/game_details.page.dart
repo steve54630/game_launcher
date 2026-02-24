@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:game_launcher/core/providers/usecase.providers.dart';
-import 'package:game_launcher/domain/model/game.model.dart';
+import 'package:game_launcher/domain/entities/game_details.entity.dart';
 import 'package:game_launcher/presentation/widgets/common/gallery.widget.dart';
 import 'package:game_launcher/presentation/widgets/game_details/header.widget.dart';
 import 'package:game_launcher/presentation/widgets/common/video_preview.widget.dart';

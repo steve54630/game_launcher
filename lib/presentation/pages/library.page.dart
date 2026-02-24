@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:game_launcher/core/providers/ui.providers.dart';
-import 'package:game_launcher/domain/model/game.model.dart';
+import 'package:game_launcher/domain/entities/game_details.entity.dart';
 import 'package:game_launcher/presentation/widgets/common/search.widget.dart';
 import 'package:game_launcher/presentation/widgets/game_details/game_grid.widget.dart';
 import '../../../core/theme/app.spacing.dart';

@@ -3,7 +3,7 @@ import 'package:game_launcher/core/extensions.dart';
 import 'package:game_launcher/core/providers/repository.providers.dart';
 import 'package:game_launcher/core/providers/usecase.providers.dart';
 import 'package:game_launcher/domain/entities/credentials.entity.dart';
-import 'package:game_launcher/domain/model/game.model.dart';
+import 'package:game_launcher/domain/entities/game_details.entity.dart';
 import 'package:game_launcher/presentation/notifiers/credentials.notifier.dart';
 import 'package:game_launcher/presentation/notifiers/import.notifier.dart';
 import 'package:game_launcher/presentation/notifiers/import.state.dart';
