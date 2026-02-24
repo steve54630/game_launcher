@@ -28,17 +28,12 @@ final searchIgdbProvider = Provider(
 final igdbResultsProvider = FutureProvider.autoDispose<List<IgdbSearchResult>>((
   ref,
 ) async {
-  // On observe le displayName.
-  // Dès que cette String change, TOUT ce bloc est ré-exécuté.
   final query = ref.watch(importProvider.select((s) => s.displayName));
 
   if (query == null || query.isEmpty) return [];
 
-  // Debounce technique
   await Future.delayed(const Duration(milliseconds: 500));
 
-  // On utilise ref.watch pour s'assurer que si SearchGameUseCase
-  // change (ex: credentials mis à jour), la recherche est relancée.
   final useCase = ref.watch(searchIgdbProvider);
 
   return await useCase.execute(query);
@@ -52,8 +47,5 @@ final librairyUseCaseProvider = Provider(
 );
 
 final launchGameSessionProvider = Provider<LaunchGameSession>((ref) {
-  return LaunchGameSession(
-    ref.watch(gameProvider), // Ton provider de repository
-    ref.watch(processProvider), // Ton provider de process
-  );
+  return LaunchGameSession(ref.watch(gameProvider), ref.watch(processProvider));
 });

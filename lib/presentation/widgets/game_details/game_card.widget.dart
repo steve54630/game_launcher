@@ -26,6 +26,9 @@ class GameCard extends ConsumerWidget {
     final details = gameDetails.details;
     final title = details?.name ?? game.displayName;
 
+    // Extraction du nom du fichier pour un affichage propre
+    final fileName = game.executablePath.split(RegExp(r'[/\\]')).last;
+
     return Card(
       margin: const EdgeInsets.symmetric(vertical: AppSpacing.s),
       child: InkWell(
@@ -35,7 +38,7 @@ class GameCard extends ConsumerWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // 1. Jaquette
+              // 1. Jaquette avec Hero animation
               Hero(
                 tag: 'game-cover-${game.id}',
                 child: GameCover(
@@ -48,13 +51,14 @@ class GameCard extends ConsumerWidget {
                 ),
               ),
 
-              // 2. Contenu
+              // 2. Contenu informatif
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.all(AppSpacing.m),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // Titre du jeu
                       Text(
                         title,
                         style: Theme.of(context).textTheme.headlineSmall
@@ -65,12 +69,29 @@ class GameCard extends ConsumerWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: AppSpacing.xs),
 
-                      // Rangée Infos (Badge + Date)
+                      // Chemin de l'exécutable discret (Style technique)
+                      Tooltip(
+                        message: game.executablePath,
+                        child: Text(
+                          fileName,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontFamily: 'monospace',
+                            color: AppColors.textSecondary.withOpacity(0.6),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+
+                      const SizedBox(height: AppSpacing.s),
+
+                      // Rangée Infos (Badges IGDB)
                       Wrap(
                         crossAxisAlignment: WrapCrossAlignment.center,
                         spacing: AppSpacing.s,
+                        runSpacing: AppSpacing.xs,
                         children: [
                           GameGenreBadge(genreName: details?.genre?.name),
                           GameReleaseDate(date: details?.releaseDate),
@@ -79,7 +100,7 @@ class GameCard extends ConsumerWidget {
 
                       const Spacer(),
 
-                      // 3. Actions
+                      // 3. Bloc d'actions
                       _buildActionButtons(ref, game),
                     ],
                   ),
@@ -101,7 +122,7 @@ class GameCard extends ConsumerWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Ligne 1 : Action principale (Pleine largeur)
+        // Bouton JOUER (Action principale)
         SizedBox(
           width: double.infinity,
           child: ElevatedButton.icon(
@@ -117,7 +138,7 @@ class GameCard extends ConsumerWidget {
         ),
         const SizedBox(height: AppSpacing.s),
 
-        // Ligne 2 : Actions secondaires (Partage de ligne)
+        // Actions secondaires (Détails & Suppression)
         Row(
           children: [
             Expanded(

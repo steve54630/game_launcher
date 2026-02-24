@@ -28,7 +28,7 @@ final igdbSearchProvider = Provider<IgdbRepository>((ref) {
 });
 
 final credentialsProvider = Provider<CredentialsRepository>((ref) {
-  return CredentialsRepositoryImpl(); // C'est ici que tu gères ton BYOK
+  return CredentialsRepositoryImpl();
 });
 
 final processProvider = Provider<ProcessRepository>((ref) {

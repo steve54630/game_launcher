@@ -11,4 +11,8 @@ abstract interface class GameRepository {
   Future<void> deleteGame(Game game);
 
   Stream<List<Game>> watchAllGames();
+
+  Future<Game?> getByIgdbId(int igdbId);
+
+  Future<Game?> getByPath(String executablePath);
 }

@@ -1,59 +1,55 @@
+import 'package:game_launcher/core/utils/logger.dart';
 import 'package:game_launcher/domain/entities/game_details.entity.dart';
 import 'package:game_launcher/domain/repositories/game.repository.dart';
 import 'package:game_launcher/domain/repositories/igbd_cache.repository.dart';
-import 'package:game_launcher/core/utils/logger.dart';
 
 class SaveGameUseCase {
   final GameRepository gameRepo;
-  final IgdbCacheRepository igbdRepo;
+  final IgdbCacheRepository igdbRepo;
 
-  SaveGameUseCase(this.gameRepo, this.igbdRepo);
+  SaveGameUseCase(this.gameRepo, this.igdbRepo);
 
   Future<void> execute(GameWithDetails gameDetails) async {
     final game = gameDetails.game;
     final details = gameDetails.details;
     final gameName = game.displayName;
 
-    AppLogger.info(
-      "SaveGameUseCase: Début de l'enregistrement pour '$gameName'.",
-    );
-
     try {
-      // 1. Sauvegarde des métadonnées riches dans le cache
-      if (details != null) {
-        AppLogger.info(
-          "SaveGameUseCase: Mise en cache des métadonnées IGDB (ID: ${details.igdbId}).",
-        );
-        await igbdRepo.saveToCache(details);
-      } else {
-        AppLogger.warning(
-          "SaveGameUseCase: Aucune métadonnée IGDB fournie pour '$gameName'.",
-        );
-      }
-
-      // 2. Règle métier : validation de base
+      // 1. Validation de base : Chemin obligatoire
       if (game.executablePath.isEmpty) {
-        AppLogger.error(
-          "SaveGameUseCase: Échec de validation - Chemin de l'exécutable vide.",
-        );
-        throw Exception("Le chemin local de l'exécutable est requis.");
+        throw Exception("L'exécutable du jeu est requis.");
       }
 
-      // 3. Persistance du jeu
-      AppLogger.info(
-        "SaveGameUseCase: Upsert du jeu dans la bibliothèque locale (Path: ${game.executablePath}).",
-      );
-      await gameRepo.upsertGame(game);
+      // 2. LOGIQUE ANTI-DOUBLON (IDENTITÉ)
+      // A. Vérification par Chemin (Le fichier est-il déjà utilisé par une autre entrée ?)
+      final existingByPath = await gameRepo.getByPath(game.executablePath);
+      if (existingByPath != null) {
+        AppLogger.info(
+          "SaveGameUseCase: Un jeu utilise déjà ce chemin : ${game.executablePath}.",
+        );
+        return;
+      }
+      // B. Vérification par ID IGDB (Le jeu est-il déjà présent via API ?)
+      if (game.igdbId != null) {
+        final existingById = await gameRepo.getByIgdbId(game.igdbId!);
+        if (existingById != null) {
+          AppLogger.info(
+            "SaveGameUseCase: Le jeu '$gameName' est déjà dans la bibliothèque (ID IGDB: ${game.igdbId}).",
+          );
+          return;
+        }
+      }
 
-      AppLogger.info(
-        "SaveGameUseCase: Enregistrement terminé avec succès pour '$gameName'.",
-      );
+      // 3. Persistance des métadonnées (Cache)
+      if (details != null) {
+        await igdbRepo.saveToCache(details);
+      }
+
+      // 4. Enregistrement final du jeu
+      AppLogger.info("SaveGameUseCase: Création de l'entrée pour '$gameName'.");
+      await gameRepo.upsertGame(game);
     } catch (e) {
-      AppLogger.error(
-        "SaveGameUseCase: Erreur lors de l'exécution pour '$gameName'",
-        e,
-      );
-      // On rethrow pour que le Notifier/UI puisse capturer l'erreur
+      AppLogger.error("SaveGameUseCase: Échec de l'enregistrement", e);
       rethrow;
     }
   }

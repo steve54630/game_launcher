@@ -33,8 +33,7 @@ class DatabaseHelper {
     return await databaseFactory.openDatabase(
       path,
       options: OpenDatabaseOptions(
-        version:
-            1, // Si tu as déjà lancé l'app, il faudra passer à 2 et gérer onUpgrade
+        version: 1,
         onCreate: createDB,
         onConfigure: onConfigure,
       ),

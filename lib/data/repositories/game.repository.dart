@@ -159,6 +159,70 @@ class GameRepositoryImpl implements GameRepository {
     }
   }
 
+  @override
+  Future<Game?> getByIgdbId(int igdbId) async {
+    try {
+      final db = await dbHelper.database;
+      final List<Map<String, dynamic>> maps = await db.query(
+        'games',
+        where: 'igdb_id = ?',
+        whereArgs: [igdbId],
+        limit: 1,
+      );
+
+      if (maps.isEmpty) return null;
+
+      AppLogger.debug("GameRepository: Jeu trouvé par ID IGDB ($igdbId)");
+      return _mapToEntity(maps.first);
+    } catch (e) {
+      AppLogger.error("GameRepository: Erreur lors de getByIgdbId($igdbId)", e);
+      return null;
+    }
+  }
+
+  @override
+  Future<Game?> getByPath(String executablePath) async {
+    try {
+      final db = await dbHelper.database;
+
+      // Utilisation de LIKE pour être moins sensible à la casse sur Windows
+      // ou comparaison directe selon ton besoin
+      final List<Map<String, dynamic>> maps = await db.query(
+        'games',
+        where: 'executable_path = ?',
+        whereArgs: [executablePath],
+        limit: 1,
+      );
+
+      if (maps.isEmpty) return null;
+
+      AppLogger.debug("GameRepository: Jeu trouvé par Path ($executablePath)");
+      return _mapToEntity(maps.first);
+    } catch (e) {
+      AppLogger.error(
+        "GameRepository: Erreur lors de getByPath($executablePath)",
+        e,
+      );
+      return null;
+    }
+  }
+
+  /// Helper interne pour transformer un Map SQLite en Entity Game
+  /// (Évite de répéter la logique de parsing présente dans getAllGames)
+  Game _mapToEntity(Map<String, dynamic> map) {
+    return Game(
+      id: map['id'],
+      igdbId: map['igdb_id'],
+      displayName: map['display_name'],
+      executablePath: map['executable_path'],
+      playtimeSeconds: map['playtime_seconds'] ?? 0,
+      isFavorite: map['is_favorite'] == 1,
+      lastPlayedAt: map['last_played_at'] != null
+          ? DateTime.parse(map['last_played_at'])
+          : null,
+    );
+  }
+
   void dispose() {
     AppLogger.info("GameRepository: Fermeture définitive du StreamController.");
     _gamesStreamController.close();
