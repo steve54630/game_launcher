@@ -25,12 +25,10 @@ class ImportState {
   ImportState copyWith({
     String? localPath,
     String? displayName,
-    IgdbSearchResult? Function()?
-    selectedIgdbGame, // Permet de passer null explicitement
+    IgdbSearchResult? Function()? selectedIgdbGame,
     bool? isSaving,
     bool? isSearching,
-    String? errorMessage,
-    bool clearError = false,
+    String? Function()? errorMessage,
     List<IgdbSearchResult>? searchResults,
   }) {
     return ImportState(
@@ -41,7 +39,7 @@ class ImportState {
           : this.selectedIgdbGame,
       isSaving: isSaving ?? this.isSaving,
       isSearching: isSearching ?? this.isSearching,
-      errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
+      errorMessage: errorMessage != null ? errorMessage() : this.errorMessage,
       searchResults: searchResults ?? this.searchResults,
     );
   }

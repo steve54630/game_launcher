@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:game_launcher/core/providers/ui.providers.dart';
 import 'package:game_launcher/core/theme/app.spacing.dart';
+import 'package:game_launcher/presentation/widgets/search/right/error.widget.dart';
 
 class ImportActionButton extends ConsumerWidget {
   const ImportActionButton({super.key});
@@ -16,7 +17,7 @@ class ImportActionButton extends ConsumerWidget {
         if (state.errorMessage != null)
           Padding(
             padding: const EdgeInsets.only(bottom: AppSpacing.m),
-            child: _ErrorMessage(message: state.errorMessage!),
+            child: ErrorMessage(message: state.errorMessage!),
           ),
         SizedBox(
           width: double.infinity,
@@ -41,6 +42,8 @@ class ImportActionButton extends ConsumerWidget {
                         ),
                       );
                       notifier.reset();
+
+                      ref.read(navigationIndexProvider.notifier).state = 0;
                     }
                   }
                 : null,
@@ -57,31 +60,6 @@ class ImportActionButton extends ConsumerWidget {
                     "IMPORTER DANS LA BIBLIOTHÈQUE",
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _ErrorMessage extends StatelessWidget {
-  final String message;
-  const _ErrorMessage({required this.message});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        const Icon(Icons.error_outline, color: Colors.red, size: 16),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            message,
-            style: const TextStyle(
-              color: Colors.red,
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-            ),
           ),
         ),
       ],

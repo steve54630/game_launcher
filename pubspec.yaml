@@ -6,6 +6,13 @@ version: 1.0.0+1
 environment:
   sdk: ^3.11.0
 
+msix_config:
+  display_name: Game Launcher
+  publisher_display_name: Retournay Steve
+  publisher: CN=TonNom
+  identity_name: com.SRet.gamelauncher
+  msix_version: 1.0.0.0
+
 dependencies:
   flutter:
     sdk: flutter
@@ -36,12 +43,15 @@ dependencies:
   logger: ^2.5.0
   intl: ^0.19.0 # Souvent nécessaire pour formater les dates de sortie (releaseDate)
   file: ^7.0.0
+  win32: ^5.10.0
+  ffi: ^2.2.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
   mocktail: ^1.0.4
+  msix: ^3.16.13
 
 flutter:
   uses-material-design: true

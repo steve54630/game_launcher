@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:game_launcher/core/providers/ui.providers.dart';
+import 'package:game_launcher/core/providers/usecase.providers.dart';
 import 'package:game_launcher/core/theme/app.spacing.dart';
 import 'package:game_launcher/presentation/widgets/search/flie_picker.widget.dart';
 
@@ -33,8 +34,15 @@ class _LeftImportSectionState extends ConsumerState<LeftImportSection> {
     super.dispose();
   }
 
+  void _handleNameChange(String value) {
+    // 2. Mise à jour du terme de recherche pour déclencher l'API IGDB
+    // C'est ce qui permet à la RightImportSection de réagir via igdbResultsProvider
+    ref.read(gameSearchTermProvider.notifier).updateTerm(value);
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Écoute les changements du state (ex: quand on sélectionne un fichier, le nom change automatiquement)
     ref.listen<String?>(importProvider.select((s) => s.displayName), (
       previous,
       next,
@@ -44,6 +52,8 @@ class _LeftImportSectionState extends ConsumerState<LeftImportSection> {
         _nameController.selection = TextSelection.fromPosition(
           TextPosition(offset: _nameController.text.length),
         );
+        // On synchronise aussi la recherche IGDB lors d'un changement automatique (auto-fill du fichier)
+        ref.read(gameSearchTermProvider.notifier).updateTerm(next);
       }
     });
 
@@ -80,7 +90,7 @@ class _LeftImportSectionState extends ConsumerState<LeftImportSection> {
           const SizedBox(height: AppSpacing.m),
           TextField(
             controller: _nameController,
-            onChanged: (value) => notifier.updateDisplayName(value),
+            onChanged: _handleNameChange, // Utilise la méthode synchronisée
             decoration: const InputDecoration(
               labelText: "Nom d'affichage",
               prefixIcon: Icon(Icons.edit),

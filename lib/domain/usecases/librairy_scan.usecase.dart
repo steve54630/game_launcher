@@ -1,6 +1,7 @@
+import 'package:game_launcher/core/utils/logger.dart';
+import 'package:game_launcher/core/utils/scanner_heuristic.dart';
 import 'package:game_launcher/domain/entities/discovery_result.entity.dart';
 import 'package:game_launcher/domain/repositories/process.repository.dart';
-import 'package:game_launcher/core/utils/logger.dart';
 
 class ScanLibrarySource {
   final ProcessRepository repository;
@@ -8,50 +9,53 @@ class ScanLibrarySource {
   ScanLibrarySource(this.repository);
 
   Future<List<DiscoveryResult>> execute(String path) async {
-    AppLogger.info(
-      "ScanLibrarySource: Démarrage du scan dans le répertoire: $path",
-    );
+    AppLogger.info("ScanLibrarySource: Démarrage du scan dans: $path");
 
-    if (path.isEmpty) {
-      AppLogger.warning(
-        "ScanLibrarySource: Le chemin fourni est vide. Abandon du scan.",
-      );
-      return [];
-    }
+    if (path.isEmpty) return [];
 
     try {
-      // Mesure du temps pour évaluer les performances de l'I/O
       final stopWatch = Stopwatch()..start();
 
-      final results = await repository.scanForExecutables(path);
+      // 1. Récupération brute de tous les .exe (via ton Repo existant)
+      final rawFiles = await repository.scanForExecutables(path);
 
-      stopWatch.stop();
+      // 2. Filtrage intelligent : Un seul gagnant par dossier
+      final Map<String, (DiscoveryResult result, double score)> bestMatches =
+          {};
 
-      AppLogger.info(
-        "ScanLibrarySource: Scan terminé en ${stopWatch.elapsedMilliseconds}ms. "
-        "${results.length} exécutable(s) potentiel(s) trouvé(s).",
-      );
+      for (var item in rawFiles) {
+        // On récupère le dossier parent pour grouper
+        final fileUri = Uri.file(item.fullPath);
+        final folderName =
+            fileUri.pathSegments[fileUri.pathSegments.length - 2];
+        final folderPath = fileUri.resolve('.').toFilePath();
 
-      // Log détaillé des résultats pour faciliter le debug de l'algo de détection
-      if (results.isNotEmpty) {
-        for (var i = 0; i < results.length; i++) {
-          AppLogger.info(
-            "ScanLibrarySource: [#$i] Trouvé: ${results.elementAt(i).fullPath}",
-          );
-        }
-      } else {
-        AppLogger.warning(
-          "ScanLibrarySource: Aucun exécutable trouvé dans le répertoire spécifié.",
+        final score = ScannerHeuristics.calculateScore(
+          fileName: item.rawName,
+          folderName: folderName,
+          fileSizeInBytes: item.fileSize,
         );
+
+        // On ne garde que si le score est décent (> 0.15)
+        if (score > 0.15) {
+          if (!bestMatches.containsKey(folderPath) ||
+              score > bestMatches[folderPath]!.$2) {
+            bestMatches[folderPath] = (item, score);
+          }
+        }
       }
 
-      return results.toList();
-    } catch (e) {
-      AppLogger.error(
-        "ScanLibrarySource: Erreur lors du scan du répertoire '$path'",
-        e,
+      final filteredResults = bestMatches.values.map((e) => e.$1).toList();
+
+      stopWatch.stop();
+      AppLogger.info(
+        "ScanLibrarySource: Scan terminé en ${stopWatch.elapsedMilliseconds}ms. "
+        "Post-filtrage : ${filteredResults.length} exécutables retenus (sur ${rawFiles.length}).",
       );
-      // En tant que dev, on rethrow pour que l'UI puisse réagir (ex: dialogue d'erreur de droits)
+
+      return filteredResults;
+    } catch (e) {
+      AppLogger.error("ScanLibrarySource: Erreur lors du scan", e);
       rethrow;
     }
   }

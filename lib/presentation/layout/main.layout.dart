@@ -1,59 +1,49 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:game_launcher/core/providers/ui.providers.dart';
+import 'package:game_launcher/presentation/pages/import_all.page.dart';
 import 'package:game_launcher/presentation/pages/import_page.dart';
 import 'package:game_launcher/presentation/pages/library.page.dart';
 import 'package:game_launcher/presentation/widgets/common/connect.widget.dart';
 import 'package:game_launcher/presentation/widgets/common/menu.widget.dart';
 import 'dart:io';
 
-class MainLayout extends StatefulWidget {
+class MainLayout extends ConsumerWidget {
   const MainLayout({super.key});
 
-  @override
-  State<MainLayout> createState() => _MainLayoutState();
-}
-
-class _MainLayoutState extends State<MainLayout> {
-  int _selectedIndex = 0;
-
-  final List<Widget> _pages = [
-    const LibraryPage(), // Ta liste de jeux
-    const GameImportPage(), // Ta page d'import
+  final List<Widget> _pages = const [
+    LibraryPage(),
+    GameImportPage(),
+    MultiGameImportPage(),
   ];
 
-  void _onNavigation(int index) {
-    // Si l'index est 3, c'est le bouton Quitter
-    if (index == 3) {
-      exit(0);
-    }
-
-    if (index == 2) {
-      _showIgdbAuthDialog();
-      return; // On ne change pas la page active, on affiche juste la modale
-    }
-    setState(() => _selectedIndex = index);
-  }
-
-  void _showIgdbAuthDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: true, // Permet de fermer en cliquant à côté
-      builder: (context) => const IgdbAuthModal(),
-    );
-  }
-
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final selectedIndex = ref.watch(navigationIndexProvider);
+
     return Scaffold(
       body: Row(
         children: [
           AppNavigationRail(
-            selectedIndex: _selectedIndex,
-            onDestinationSelected: _onNavigation,
+            selectedIndex: selectedIndex,
+            onDestinationSelected: (index) {
+              if (index == 4) exit(0);
+              if (index == 3) {
+                _showIgdbAuthDialog(context);
+                return;
+              }
+              // Mise à jour via le provider
+              ref.read(navigationIndexProvider.notifier).state = index;
+            },
           ),
           const VerticalDivider(width: 1, thickness: 1),
-          Expanded(child: _pages[_selectedIndex]),
+          Expanded(child: _pages[selectedIndex]),
         ],
       ),
     );
+  }
+
+  void _showIgdbAuthDialog(BuildContext context) {
+    showDialog(context: context, builder: (context) => const IgdbAuthModal());
   }
 }

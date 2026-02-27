@@ -108,7 +108,6 @@ class ProcessRepositoryImpl implements ProcessRepository {
       )) {
         scannedCount++;
 
-        // Log de progression tous les 100 fichiers pour ne pas inonder la console
         if (scannedCount % 100 == 0) {
           AppLogger.debug(
             "ProcessRepo: Scan en cours... $scannedCount fichiers analysés.",
@@ -121,10 +120,15 @@ class ProcessRepositoryImpl implements ProcessRepository {
         final segments = _fileSystem.path.split(path);
 
         if (ExecutableFilter.isGameExecutable(path, segments)) {
+          final fileSize = await entity.length();
+          final fileName = _fileSystem.path.basename(path);
+
           AppLogger.info(
-            "ProcessRepo: Exécutable de jeu potentiel trouvé: ${_fileSystem.path.basename(path)}",
+            "ProcessRepo: Exécutable trouvé: $fileName (${(fileSize / 1024 / 1024).toStringAsFixed(2)} Mo)",
           );
-          results.add(_mapToDiscoveryResult(path, segments));
+
+          // On passe la taille au mapper
+          results.add(_mapToDiscoveryResult(path, segments, fileSize));
         }
       }
 
@@ -142,13 +146,18 @@ class ProcessRepositoryImpl implements ProcessRepository {
     return results;
   }
 
-  DiscoveryResult _mapToDiscoveryResult(String path, List<String> segments) {
+  DiscoveryResult _mapToDiscoveryResult(
+    String path,
+    List<String> segments,
+    int fileSize,
+  ) {
     return DiscoveryResult(
       rawName: _fileSystem.path.basename(path),
       fullPath: path,
       pathSegments: segments
           .where((s) => !s.contains(':') && s.isNotEmpty)
           .toList(),
+      fileSize: fileSize,
     );
   }
 }
