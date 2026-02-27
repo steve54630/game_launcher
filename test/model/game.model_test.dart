@@ -11,7 +11,6 @@ void main() {
     final tMap = {
       'id': 1,
       'igdb_id': 123,
-      'display_name': 'Hades II',
       'executable_path': 'C:/Games/Hades2.exe',
       'playtime_seconds': 3600,
       'last_played_at': '2026-01-01T12:00:00.000',
@@ -22,7 +21,6 @@ void main() {
       final result = GameModel.fromMap(tMap);
 
       expect(result.id, 1);
-      expect(result.displayName, 'Hades II');
       expect(result.lastPlayedAt, tDateTime);
       expect(result.isFavorite, isTrue);
     });
@@ -31,7 +29,6 @@ void main() {
       final model = GameModel(
         id: 1,
         igdbId: 123,
-        displayName: 'Hades II',
         executablePath:
             'C:/Games/Hades2.exe', // Utilisation du param nommé correct
         playtimeSeconds: 3600,
@@ -41,20 +38,14 @@ void main() {
 
       final result = model.toMap();
 
-      expect(result['display_name'], 'Hades II');
       expect(result['is_favorite'], 1);
       expect(result['last_played_at'], tDateTime.toIso8601String());
     });
 
     test('fromEntity should create model from base entity', () {
-      final entity = Game(
-        displayName: 'Entity Game',
-        executablePath: '/path',
-        isFavorite: true,
-      );
+      final entity = Game(executablePath: '/path', isFavorite: true);
 
       final result = GameModel.fromEntity(entity);
-      expect(result.displayName, entity.displayName);
       expect(result.isFavorite, isTrue);
     });
   });
@@ -63,15 +54,9 @@ void main() {
     test(
       'Should return GameWithDetails with null details if igdb_id is missing',
       () {
-        final map = {
-          'display_name': 'No IGDB Game',
-          'executable_path': '/path',
-          'igdb_id': null,
-        };
+        final map = {'executable_path': '/path', 'igdb_id': null};
 
         final result = GameModel.toGameWithDetails(map);
-
-        expect(result.game.displayName, 'No IGDB Game');
         expect(result.details, isNull);
       },
     );
@@ -80,7 +65,6 @@ void main() {
       final fullMap = {
         'id': 1,
         'igdb_id': 100,
-        'display_name': 'Cyberpunk',
         'executable_path': '/path',
         'name': 'Cyberpunk 2077', // Nom IGDB different du display name
         'cover_url': 'http://cover.jpg',
@@ -110,7 +94,6 @@ void main() {
 
       final result = GameWithDetailsModel.fromDiscovery(discovery);
 
-      expect(result.game.displayName, 'Game.exe');
       expect(result.game.igdbId, 99);
       expect(result.details?.name, 'Matched Name');
     });

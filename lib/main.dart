@@ -6,9 +6,12 @@ import 'package:game_launcher/core/utils/database_helper.dart';
 import 'package:game_launcher/core/utils/logger.dart';
 import 'package:game_launcher/presentation/myapp.page.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:media_kit/media_kit.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  MediaKit.ensureInitialized();
 
   // 1. Initialisation du logger
   await AppLogger.init();

@@ -14,10 +14,10 @@ class ImportActionButton extends ConsumerWidget {
 
     return Column(
       children: [
-        if (state.errorMessage != null)
+        if (state.error != null)
           Padding(
             padding: const EdgeInsets.only(bottom: AppSpacing.m),
-            child: ErrorMessage(message: state.errorMessage!),
+            child: ErrorMessage(message: state.error!),
           ),
         SizedBox(
           width: double.infinity,

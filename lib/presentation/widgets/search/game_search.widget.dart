@@ -148,7 +148,9 @@ class _SearchGameModalState extends ConsumerState<SearchGameModal> {
                 : "Date inconnue",
           ),
           onTap: () {
-            target?.setIgdbMatch(game);
+            if (target != null) {
+              target.applyMatch(game);
+            }
             Navigator.pop(context);
           },
         );

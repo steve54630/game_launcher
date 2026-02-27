@@ -22,10 +22,19 @@ class ImportNotifier extends Notifier<ImportState>
 
   @override
   void applyMatch(IgdbSearchResult game, {String? path}) {
-    dev.log('Match IGDB appliqué: ${game.name}', name: 'ImportNotifier');
     state = state.copyWith(
       selectedIgdbGame: () => game,
+      searchName: game.name,
       errorMessage: () => null,
+    );
+  }
+
+  @override
+  void updateSearchName(String name, {String? path}) {
+    final isDifferent = state.selectedIgdbGame?.name != name;
+    state = state.copyWith(
+      searchName: name,
+      selectedIgdbGame: isDifferent ? () => null : () => state.selectedIgdbGame,
     );
   }
 
@@ -35,16 +44,14 @@ class ImportNotifier extends Notifier<ImportState>
       if (path == null) return;
 
       final fileName = path.split(RegExp(r'[/\\]')).last.split('.').first;
-      dev.log('Fichier sélectionné: $path', name: 'ImportNotifier');
 
       state = state.copyWith(
         localPath: path,
-        displayName: fileName,
+        searchName: fileName,
         selectedIgdbGame: () => null,
         errorMessage: () => null,
       );
     } catch (e) {
-      dev.log('Erreur FilePicker: $e', name: 'ImportNotifier', error: e);
       state = state.copyWith(
         errorMessage: () => "Erreur lors de la sélection.",
       );
@@ -56,26 +63,16 @@ class ImportNotifier extends Notifier<ImportState>
     final path = state.localPath;
     if (selected == null || path == null) return false;
 
-    dev.log(
-      'Début import: ${state.displayName} (IGDB: ${selected.igdbId})',
-      name: 'ImportNotifier',
-    );
     state = state.copyWith(isSaving: true, errorMessage: () => null);
 
     try {
       final gameToSave = GameWithDetails(
-        game: Game(
-          displayName: state.displayName ?? selected.name,
-          executablePath: path,
-          igdbId: selected.igdbId,
-        ),
+        game: Game(executablePath: path, igdbId: selected.igdbId),
         details: selected,
       );
       await ref.read(saveGameUseCaseProvider).execute(gameToSave);
-      dev.log('Import réussi', name: 'ImportNotifier');
       return true;
     } catch (e) {
-      dev.log('Erreur SaveGame: $e', name: 'ImportNotifier', error: e);
       state = state.copyWith(errorMessage: () => "Échec de l'enregistrement.");
       return false;
     } finally {
@@ -84,7 +81,6 @@ class ImportNotifier extends Notifier<ImportState>
   }
 
   void reset() {
-    dev.log('Reset ImportState', name: 'ImportNotifier');
     state = ImportState();
   }
 }

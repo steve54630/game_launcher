@@ -83,6 +83,20 @@ Chiffrement des identifiants API via FlutterSecureStorage.
 
 Mise à jour automatique de la vue via le StreamProvider de la bibliothèque.
 
+### 🔄 Pipeline d'Enrichissement
+
+Discovery : Scan récursif via ProcessRepository avec filtrage intelligent des exécutables.
+
+Hydration :
+
+Vérification du Cache Local (SQLite) pour limiter les quotas API.
+
+Si absent : Requête IGDB API (OAuth2) et mise en cache immédiate.
+
+Asset Management : Téléchargement asynchrone des médias (Covers/Screenshots) avec ImageDownloader.
+
+Reactive UI : Diffusion des changements via StateNotifier / StreamProvider.
+
 ---
 
 ## 🔑 Installation & Configuration

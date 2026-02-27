@@ -7,7 +7,6 @@ class GameModel extends Game {
   GameModel({
     super.id,
     super.igdbId,
-    required super.displayName,
     required super.executablePath,
     super.playtimeSeconds = 0,
     super.lastPlayedAt,
@@ -19,7 +18,6 @@ class GameModel extends Game {
     return GameModel(
       id: map['id'] as int?,
       igdbId: map['igdb_id'] as int?,
-      displayName: map['display_name'] as String,
       executablePath: map['executable_path'] as String,
       playtimeSeconds: map['playtime_seconds'] as int? ?? 0,
       lastPlayedAt: map['last_played_at'] != null
@@ -34,7 +32,6 @@ class GameModel extends Game {
     return {
       if (id != null) 'id': id,
       'igdb_id': igdbId,
-      'display_name': displayName,
       'executable_path': executablePath,
       'playtime_seconds': playtimeSeconds,
       'last_played_at': lastPlayedAt?.toIso8601String(),
@@ -46,7 +43,6 @@ class GameModel extends Game {
     return GameModel(
       id: game.id,
       igdbId: game.igdbId,
-      displayName: game.displayName,
       executablePath: game.executablePath,
       playtimeSeconds: game.playtimeSeconds,
       lastPlayedAt: game.lastPlayedAt,
@@ -66,7 +62,7 @@ class GameModel extends Game {
 
     final metadata = IgdbSearchResult(
       igdbId: map['igdb_id'] as int,
-      name: map['name'] as String? ?? game.displayName,
+      name: map['name'] as String,
       coverUrl: map['cover_url'] as String?,
       summary: map['summary'] as String?,
       youtubeVideoId: map['video_id'] as String?,

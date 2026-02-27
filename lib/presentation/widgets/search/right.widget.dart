@@ -22,15 +22,19 @@ class RightImportSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final searchTerm = ref.watch(gameSearchTermProvider);
+    final state = ref.watch(importProvider);
+    final game = state.selectedIgdbGame;
+    final searchAsync = ref.watch(igdbResultsProvider);
+
+    // Écoute les résultats de recherche pour l'auto-matching
     ref.listen<AsyncValue<List<IgdbSearchResult>>>(igdbResultsProvider, (
       previous,
       next,
     ) {
-      final state = ref.read(importProvider);
       final notifier = ref.read(importProvider.notifier);
 
-      // Si le champ de texte est vide, on reset les erreurs et on arrête
-      if (state.displayName == null || state.displayName!.trim().isEmpty) {
+      if (searchTerm.trim().isEmpty) {
         notifier.setErrorMessage(null);
         return;
       }
@@ -41,21 +45,19 @@ class RightImportSection extends ConsumerWidget {
             notifier.setErrorMessage("Aucun jeu trouvé sur IGDB.");
           } else {
             notifier.setErrorMessage(null);
+
+            // On n'auto-sélectionne le premier résultat QUE si l'utilisateur
+            // n'a pas déjà fait un choix manuel via la modal.
             if (state.selectedIgdbGame == null) {
-              notifier.setIgdbMatch(results.first);
+              notifier.applyMatch(results.first);
             }
           }
         },
-        error: (err, stack) {
-          notifier.setErrorMessage("Erreur technique IGDB.");
-        },
+        error: (err, stack) =>
+            notifier.setErrorMessage("Erreur technique IGDB."),
         loading: () {},
       );
     });
-
-    final state = ref.watch(importProvider);
-    final game = state.selectedIgdbGame;
-    final searchAsync = ref.watch(igdbResultsProvider);
 
     return Padding(
       padding: const EdgeInsets.all(AppSpacing.xl),
@@ -69,16 +71,33 @@ class RightImportSection extends ConsumerWidget {
           const SizedBox(height: AppSpacing.m),
           Expanded(
             child: SingleChildScrollView(
+              key: ValueKey(game?.igdbId),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   IgdbMatchCard(
-                    title: game?.name ?? "Aucun jeu lié",
+                    title:
+                        game?.name ??
+                        (searchTerm.isEmpty
+                            ? "En attente de saisie"
+                            : "Recherche en cours..."),
                     imageUrl: game?.coverUrl,
-                    onEdit: () => showDialog(
-                      context: context,
-                      builder: (_) => const Dialog(child: SearchGameModal()),
-                    ),
+                    onEdit: () {
+                      ref.read(activeImportTargetProvider.notifier).state = ref
+                          .read(importProvider.notifier);
+
+                      // On initialise la recherche avec le nom actuellement dans le state
+                      final currentName =
+                          ref.read(importProvider).searchName ?? "";
+                      ref
+                          .read(gameSearchTermProvider.notifier)
+                          .updateTerm(currentName);
+
+                      showDialog(
+                        context: context,
+                        builder: (_) => const Dialog(child: SearchGameModal()),
+                      );
+                    },
                   ),
                   if (game != null) ...[
                     const SizedBox(height: AppSpacing.l),
@@ -116,7 +135,11 @@ class RightImportSection extends ConsumerWidget {
                     const SizedBox(height: AppSpacing.s),
                     if (game.youtubeVideoId != null) ...[
                       const Text("PREVIEW", style: labelStyle),
-                      GameVideoPreview(youtubeVideoId: game.youtubeVideoId!),
+                      const SizedBox(height: AppSpacing.m),
+                      GameVideoPreview(
+                        key: ValueKey(game.youtubeVideoId),
+                        youtubeVideoId: game.youtubeVideoId!,
+                      ),
                     ],
                   ],
                 ],

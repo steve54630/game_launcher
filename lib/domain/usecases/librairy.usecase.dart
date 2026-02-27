@@ -24,7 +24,7 @@ class LibrairyUseCase {
           games.map((game) async {
             if (game.igdbId == null) {
               AppLogger.warning(
-                "LibrairyUseCase: Le jeu '${game.displayName}' n'a pas d'ID IGDB associé.",
+                "LibrairyUseCase: Le jeu '${game.executablePath}' n'a pas d'ID IGDB associé.",
               );
               return GameWithDetails(game: game, details: null);
             }
@@ -33,7 +33,7 @@ class LibrairyUseCase {
 
             if (details == null) {
               AppLogger.warning(
-                "LibrairyUseCase: Cache manquant pour IGDB ID: ${game.igdbId} (${game.displayName}).",
+                "LibrairyUseCase: Cache manquant pour IGDB ID: ${game.igdbId} (${game.executablePath}).",
               );
             }
 

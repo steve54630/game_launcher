@@ -25,7 +25,7 @@ class AddGamesToLibrary {
     for (var game in games) {
       try {
         AppLogger.info(
-          "AddGamesToLibrary: Upsert du jeu: ${game.displayName} (ID IGDB: ${game.igdbId})",
+          "AddGamesToLibrary: Upsert du jeu: ${game.executablePath} (ID IGDB: ${game.igdbId})",
         );
 
         await repository.upsertGame(game);
@@ -34,7 +34,7 @@ class AddGamesToLibrary {
       } catch (e) {
         errorCount++;
         AppLogger.error(
-          "AddGamesToLibrary: Échec de l'upsert pour ${game.displayName}",
+          "AddGamesToLibrary: Échec de l'upsert pour ${game.executablePath}",
           e,
         );
         // On continue la boucle malgré l'erreur sur un jeu spécifique

@@ -14,7 +14,7 @@ class DeleteGameDialog extends ConsumerWidget {
 
     return AlertDialog(
       title: const Text("Confirmation"),
-      content: Text("Voulez-vous vraiment supprimer ${game.displayName} ?"),
+      content: Text("Voulez-vous vraiment supprimer ${game.executablePath} ?"),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(false),

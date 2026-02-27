@@ -10,7 +10,7 @@ class LaunchGameSession {
   LaunchGameSession(this.gameRepository, this.processRepository);
 
   Future<void> execute(Game game) async {
-    final gameName = game.displayName;
+    final gameName = game.executablePath;
     AppLogger.info(
       "LaunchGameSession: Tentative de lancement pour '$gameName'...",
     );

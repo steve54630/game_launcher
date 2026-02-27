@@ -12,7 +12,7 @@ class SaveGameUseCase {
   Future<void> execute(GameWithDetails gameDetails) async {
     final game = gameDetails.game;
     final details = gameDetails.details;
-    final gameName = game.displayName;
+    final gameName = game.executablePath;
 
     try {
       // 1. Validation de base : Chemin obligatoire

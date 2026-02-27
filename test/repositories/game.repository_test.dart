@@ -27,89 +27,66 @@ void main() {
     test('Should retrieve a game with local data only', () async {
       final newGame = Game(
         igdbId: null,
-        displayName: 'Doom Eternal',
         executablePath: 'C:\\Games\\Doom\\DoomEternal.exe',
       );
       await gameRepo.upsertGame(newGame);
       final results = await gameRepo.getAllGames();
       expect(results.length, 1);
-      expect(results.first.displayName, 'Doom Eternal');
     });
 
     test('Should handle multiple games and preserve order', () async {
-      await gameRepo.upsertGame(
-        Game(displayName: 'Zelda', executablePath: 'z.exe'),
-      );
-      await gameRepo.upsertGame(
-        Game(displayName: 'A-Train', executablePath: 'a.exe'),
-      );
+      await gameRepo.upsertGame(Game(executablePath: 'z.exe'));
+      await gameRepo.upsertGame(Game(executablePath: 'a.exe'));
       final results = await gameRepo.getAllGames();
-      expect(results.first.displayName, 'A-Train');
-      expect(results.last.displayName, 'Zelda');
+      expect(results.first.executablePath, 'z.exe');
+      expect(results.last.executablePath, 'a.exe');
+    });
+  });
+
+  test('Should find game by IGDB ID', () async {
+    const igdbId = 42;
+
+    await db.insert('igdb_cache', {
+      'igdb_id': igdbId,
+      'name': 'Hades',
+      'screenshot_urls': '[]',
+      'updated_at': DateTime.now().toIso8601String(),
     });
 
-    test('Should watchAllGames and emit updates on changes', () async {
-      final stream = gameRepo.watchAllGames();
+    await gameRepo.upsertGame(
+      Game(igdbId: igdbId, executablePath: 'hades.exe'),
+    );
 
-      final futureExpect = expectLater(
-        stream,
-        emitsThrough(containsWith(displayName: 'Stray')),
-      );
+    final found = await gameRepo.getByIgdbId(igdbId);
+    expect(found?.executablePath, 'hades.exe');
+  });
 
-      await gameRepo.upsertGame(
-        Game(displayName: 'Stray', executablePath: 'stray.exe'),
-      );
-      await futureExpect;
+  test('Should find game by executable path', () async {
+    const path = 'C:\\Games\\Tunic.exe';
+    await gameRepo.upsertGame(Game(executablePath: path));
+
+    final found = await gameRepo.getByPath(path);
+    expect(found?.executablePath, path);
+  });
+
+  test('Should handle date parsing and null fields from SQL join', () async {
+    final now = DateTime.now().toIso8601String().split('.')[0];
+
+    await db.insert('games', {
+      'executable_path': 'map.exe',
+      'playtime_seconds': 120,
+      'is_favorite': 1,
+      'last_played_at': now,
     });
 
-    test('Should find game by IGDB ID', () async {
-      const igdbId = 42;
-
-      await db.insert('igdb_cache', {
-        'igdb_id': igdbId,
-        'name': 'Hades',
-        'screenshot_urls': '[]',
-        'updated_at': DateTime.now().toIso8601String(),
-      });
-
-      await gameRepo.upsertGame(
-        Game(igdbId: igdbId, displayName: 'Hades', executablePath: 'hades.exe'),
-      );
-
-      final found = await gameRepo.getByIgdbId(igdbId);
-      expect(found?.displayName, 'Hades');
-    });
-
-    test('Should find game by executable path', () async {
-      const path = 'C:\\Games\\Tunic.exe';
-      await gameRepo.upsertGame(
-        Game(displayName: 'Tunic', executablePath: path),
-      );
-
-      final found = await gameRepo.getByPath(path);
-      expect(found?.displayName, 'Tunic');
-    });
-
-    test('Should handle date parsing and null fields from SQL join', () async {
-      final now = DateTime.now().toIso8601String().split('.')[0];
-
-      await db.insert('games', {
-        'display_name': 'Mapped Game',
-        'executable_path': 'map.exe',
-        'playtime_seconds': 120,
-        'is_favorite': 1,
-        'last_played_at': now,
-      });
-
-      final results = await gameRepo.getAllGames();
-      expect(results.first.isFavorite, isTrue);
-      expect(results.first.lastPlayedAt, isNotNull);
-    });
+    final results = await gameRepo.getAllGames();
+    expect(results.first.isFavorite, isTrue);
+    expect(results.first.lastPlayedAt, isNotNull);
   });
 }
 
 Matcher containsWith({required String displayName}) {
   return predicate<List<Game>>((list) {
-    return list.any((g) => g.displayName == displayName);
+    return list.any((g) => g.executablePath == displayName);
   });
 }

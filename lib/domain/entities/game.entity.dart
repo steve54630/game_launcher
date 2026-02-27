@@ -1,7 +1,6 @@
 class Game {
   final int? id;
   final int? igdbId;
-  final String displayName;
   final String executablePath;
   final int playtimeSeconds;
   final DateTime? lastPlayedAt;
@@ -10,7 +9,6 @@ class Game {
   Game({
     this.id,
     this.igdbId,
-    required this.displayName,
     required this.executablePath,
     this.playtimeSeconds = 0,
     this.lastPlayedAt,
@@ -20,7 +18,6 @@ class Game {
   Game copyWith({
     int? id,
     int? igdbId,
-    String? displayName,
     String? gameGenre,
     String? executablePath,
     int? playtimeSeconds,
@@ -30,7 +27,6 @@ class Game {
     return Game(
       id: id ?? this.id,
       igdbId: igdbId ?? this.igdbId,
-      displayName: displayName ?? this.displayName,
       executablePath: executablePath ?? this.executablePath,
       playtimeSeconds: playtimeSeconds ?? this.playtimeSeconds,
       lastPlayedAt: lastPlayedAt ?? this.lastPlayedAt,

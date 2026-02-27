@@ -26,7 +26,7 @@ class GameDetailsPage extends ConsumerWidget {
           SliverPersistentHeader(
             pinned: true,
             delegate: GameDetailsHeader(
-              title: meta?.name ?? game.displayName,
+              title: meta?.name ?? game.executablePath,
               // On passe le chemin brut, le Header utilisera SmartImage en interne
               coverUrl: meta?.screenshots.firstOrNull ?? '',
               expandedHeight: 400,

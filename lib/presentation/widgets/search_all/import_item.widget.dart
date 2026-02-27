@@ -12,7 +12,6 @@ class ImportItemTile extends ConsumerWidget {
   const ImportItemTile({super.key, required this.result});
 
   Future<void> _openFileLocation(String path) async {
-    // Commande Windows pour ouvrir le dossier et sélectionner le fichier
     await Process.run('explorer.exe', ['/select,', path]);
   }
 
@@ -39,15 +38,12 @@ class ImportItemTile extends ConsumerWidget {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Nom du fichier (rawName) uniquement
             Text(
               result.rawName,
               style: const TextStyle(fontWeight: FontWeight.bold),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
-
-            // Chemin cliquable
             const SizedBox(height: 2),
             InkWell(
               onTap: () => _openFileLocation(result.fullPath),
@@ -70,10 +66,8 @@ class ImportItemTile extends ConsumerWidget {
           child: MetadataPreview(result: result),
         ),
         trailing: Row(
-          mainAxisSize: MainAxisSize
-              .min, // Important pour ne pas prendre toute la largeur
+          mainAxisSize: MainAxisSize.min,
           children: [
-            // Bouton Supprimer de la liste
             IconButton(
               icon: const Icon(
                 Icons.delete_outline_rounded,
@@ -81,7 +75,6 @@ class ImportItemTile extends ConsumerWidget {
               ),
               tooltip: "Retirer de la liste",
               onPressed: () {
-                // On appelle le notifier pour supprimer ce chemin
                 ref
                     .read(importAllProvider.notifier)
                     .removeResult(result.fullPath);
@@ -106,6 +99,8 @@ class ImportItemTile extends ConsumerWidget {
     final notifier = ref.read(importAllProvider.notifier);
     ref.read(activeImportTargetProvider.notifier).state = notifier;
     notifier.prepareEditing(item.fullPath);
+
+    // On utilise le nom du fichier comme base de recherche
     ref.read(gameSearchTermProvider.notifier).updateTerm(item.rawName);
 
     showModalBottomSheet(

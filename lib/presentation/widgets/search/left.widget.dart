@@ -21,8 +21,11 @@ class _LeftImportSectionState extends ConsumerState<LeftImportSection> {
 
     Future.microtask(() {
       if (mounted) {
-        final initialValue = ref.read(importProvider).displayName ?? "";
-        _nameController.text = initialValue;
+        final initialName = ref.read(importProvider).searchName ?? "";
+        _nameController.text = initialName;
+        if (initialName.isNotEmpty) {
+          ref.read(gameSearchTermProvider.notifier).updateTerm(initialName);
+        }
       }
     });
   }
@@ -34,28 +37,15 @@ class _LeftImportSectionState extends ConsumerState<LeftImportSection> {
   }
 
   void _handleNameChange(String value) {
-    // 2. Mise à jour du terme de recherche pour déclencher l'API IGDB
-    // C'est ce qui permet à la RightImportSection de réagir via igdbResultsProvider
+    // Met à jour le state de l'import (nom affiché)
+    ref.read(importProvider.notifier).updateSearchName(value);
+
+    // Met à jour la recherche IGDB (déclenche le provider de résultats)
     ref.read(gameSearchTermProvider.notifier).updateTerm(value);
   }
 
   @override
   Widget build(BuildContext context) {
-    // Écoute les changements du state (ex: quand on sélectionne un fichier, le nom change automatiquement)
-    ref.listen<String?>(importProvider.select((s) => s.displayName), (
-      previous,
-      next,
-    ) {
-      if (next != null && next != _nameController.text) {
-        _nameController.text = next;
-        _nameController.selection = TextSelection.fromPosition(
-          TextPosition(offset: _nameController.text.length),
-        );
-        // On synchronise aussi la recherche IGDB lors d'un changement automatique (auto-fill du fichier)
-        ref.read(gameSearchTermProvider.notifier).updateTerm(next);
-      }
-    });
-
     final state = ref.watch(importProvider);
     final notifier = ref.read(importProvider.notifier);
 
@@ -89,10 +79,10 @@ class _LeftImportSectionState extends ConsumerState<LeftImportSection> {
           const SizedBox(height: AppSpacing.m),
           TextField(
             controller: _nameController,
-            onChanged: _handleNameChange, // Utilise la méthode synchronisée
+            onChanged: _handleNameChange,
             decoration: const InputDecoration(
-              labelText: "Nom d'affichage",
-              prefixIcon: Icon(Icons.edit),
+              labelText: "Nom pour la recherche IGDB",
+              prefixIcon: Icon(Icons.search),
               border: OutlineInputBorder(),
             ),
           ),

@@ -2,20 +2,20 @@ import 'package:game_launcher/domain/entities/search_result.entity.dart';
 
 class ImportState {
   final String? localPath;
-  final String? displayName;
+  final String? searchName;
   final IgdbSearchResult? selectedIgdbGame;
   final bool isSaving;
   final bool isSearching;
-  final String? errorMessage;
+  final String? error;
   final List<IgdbSearchResult> searchResults;
 
   ImportState({
     this.localPath,
-    this.displayName,
+    this.searchName,
     this.selectedIgdbGame,
     this.isSaving = false,
     this.isSearching = false,
-    this.errorMessage,
+    this.error,
     this.searchResults = const [],
   });
 
@@ -24,7 +24,7 @@ class ImportState {
 
   ImportState copyWith({
     String? localPath,
-    String? displayName,
+    String? searchName,
     IgdbSearchResult? Function()? selectedIgdbGame,
     bool? isSaving,
     bool? isSearching,
@@ -33,13 +33,13 @@ class ImportState {
   }) {
     return ImportState(
       localPath: localPath ?? this.localPath,
-      displayName: displayName ?? this.displayName,
+      searchName: searchName ?? this.searchName,
       selectedIgdbGame: selectedIgdbGame != null
           ? selectedIgdbGame()
           : this.selectedIgdbGame,
       isSaving: isSaving ?? this.isSaving,
       isSearching: isSearching ?? this.isSearching,
-      errorMessage: errorMessage != null ? errorMessage() : this.errorMessage,
+      error: errorMessage != null ? errorMessage() : error,
       searchResults: searchResults ?? this.searchResults,
     );
   }

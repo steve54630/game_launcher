@@ -10,7 +10,7 @@ class DeleteGameUseCase {
   DeleteGameUseCase(this.gameRepo, this.igdbRepo);
 
   Future<void> execute(Game game) async {
-    final gameName = game.displayName;
+    final gameName = game.executablePath;
 
     try {
       // 1. Validation métier (fail fast)

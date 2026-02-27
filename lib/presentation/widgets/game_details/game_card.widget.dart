@@ -24,7 +24,7 @@ class GameCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final game = gameDetails.game;
     final details = gameDetails.details;
-    final title = details?.name ?? game.displayName;
+    final title = details?.name ?? game.executablePath;
 
     // Extraction du nom du fichier pour un affichage propre
     final fileName = game.executablePath.split(RegExp(r'[/\\]')).last;

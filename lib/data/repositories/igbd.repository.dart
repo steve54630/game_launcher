@@ -142,7 +142,8 @@ class IgdbSearchRepositoryImpl implements IgdbRepository {
       // 2. Screenshots (Mapping safe)
       final screenshots =
           (map['screenshots'] as List?)
-              ?.map(
+              ?.where((s) => s['url'] != null)
+              .map(
                 (s) =>
                     "https:${(s['url'] as String).replaceFirst('t_thumb', 't_720p')}",
               )

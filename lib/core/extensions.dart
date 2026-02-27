@@ -17,7 +17,7 @@ extension GameListFiltering on List<GameWithDetails> {
     if (query.isEmpty) return this;
     final lowercaseQuery = query.toLowerCase();
     return where((g) {
-      final title = g.details?.name ?? g.game.displayName;
+      final title = g.details?.name ?? g.game.executablePath;
       return title.toLowerCase().contains(lowercaseQuery);
     }).toList();
   }
@@ -39,7 +39,7 @@ extension GameListFiltering on List<GameWithDetails> {
 
 // Petits helpers sur le modèle pour éviter les null-checks répétitifs
 extension GameDetailsHelper on GameWithDetails {
-  String get effectiveName => details?.name ?? game.displayName;
+  String get effectiveName => details?.name ?? game.executablePath;
   DateTime get effectiveDate => details?.releaseDate ?? DateTime(0);
   String get effectiveGenre => details?.genre?.name ?? "";
 }

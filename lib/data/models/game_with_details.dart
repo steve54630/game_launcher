@@ -8,7 +8,6 @@ class GameWithDetailsModel extends GameWithDetails {
   factory GameWithDetailsModel.fromDiscovery(DiscoveryResult result) {
     return GameWithDetailsModel(
       game: Game(
-        displayName: result.rawName,
         executablePath: result.fullPath,
         igdbId: result.igdbMatch?.igdbId,
       ),

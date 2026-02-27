@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:game_launcher/core/utils/database_helper.dart';
 import 'package:game_launcher/core/utils/logger.dart';
 import 'package:game_launcher/data/models/game.model.dart';
@@ -15,32 +14,22 @@ class GameRepositoryImpl implements GameRepository {
 
   @override
   Stream<List<Game>> watchAllGames() {
-    AppLogger.info(
-      "GameRepository: Un nouvel écouteur s'est branché au Stream des jeux.",
-    );
+    AppLogger.info("GameRepository: Nouveau listener sur le flux des jeux.");
     _refreshStream();
     return _gamesStreamController.stream;
   }
 
   Future<void> _refreshStream() async {
     try {
-      AppLogger.debug(
-        "GameRepository: Rafraîchissement du flux (Stream) demandé...",
-      );
       final games = await getAllGames();
-
       if (!_gamesStreamController.isClosed) {
         _gamesStreamController.add(games);
         AppLogger.debug(
-          "GameRepository: Flux mis à jour avec ${games.length} jeux.",
-        );
-      } else {
-        AppLogger.warning(
-          "GameRepository: Tentative de mise à jour d'un StreamController fermé.",
+          "GameRepository: Stream mis à jour (${games.length} jeux).",
         );
       }
     } catch (e) {
-      AppLogger.error("GameRepository: Échec de la notification du Stream", e);
+      AppLogger.error("GameRepository: Échec de la notification du flux", e);
     }
   }
 
@@ -48,7 +37,6 @@ class GameRepositoryImpl implements GameRepository {
   Future<List<Game>> getAllGames() async {
     try {
       final db = await dbHelper.database;
-      AppLogger.info("GameRepository: Exécution de la requête SQL globale...");
 
       final List<Map<String, dynamic>> maps = await db.rawQuery('''
         SELECT 
@@ -58,35 +46,10 @@ class GameRepositoryImpl implements GameRepository {
         FROM games g
         LEFT JOIN igdb_cache c ON g.igdb_id = c.igdb_id
         LEFT JOIN genres gen ON c.genre_id = gen.id
-        ORDER BY g.display_name ASC
+        ORDER BY c.name ASC
       ''');
 
-      AppLogger.info(
-        "GameRepository: ${maps.length} entrées récupérées de la base.",
-      );
-
-      return maps.map((map) {
-        // En tant que dev, on logue si un parsing de date échoue spécifiquement
-        try {
-          return Game(
-            id: map['id'],
-            igdbId: map['igdb_id'],
-            displayName: map['display_name'],
-            executablePath: map['executable_path'],
-            playtimeSeconds: map['playtime_seconds'] ?? 0,
-            isFavorite: map['is_favorite'] == 1,
-            lastPlayedAt: map['last_played_at'] != null
-                ? DateTime.parse(map['last_played_at'])
-                : null,
-          );
-        } catch (e) {
-          AppLogger.error(
-            "GameRepository: Erreur de parsing sur le jeu ${map['display_name']}",
-            e,
-          );
-          rethrow;
-        }
-      }).toList();
+      return maps.map((map) => _mapToEntity(map)).toList();
     } catch (e, stack) {
       AppLogger.error(
         "GameRepository: Erreur fatale lors de getAllGames()",
@@ -101,11 +64,9 @@ class GameRepositoryImpl implements GameRepository {
   Future<void> upsertGame(Game game) async {
     try {
       final db = await dbHelper.database;
-      final GameModel model = GameModel.fromEntity(game);
+      final model = GameModel.fromEntity(game);
 
-      AppLogger.info(
-        "GameRepository: Upsert SQLite pour '${game.displayName}' (ID: ${game.id ?? 'Nouveau'})",
-      );
+      AppLogger.info("GameRepository: Upsert pour '${game.executablePath}'");
 
       await db.insert(
         'games',
@@ -113,13 +74,10 @@ class GameRepositoryImpl implements GameRepository {
         conflictAlgorithm: ConflictAlgorithm.replace,
       );
 
-      AppLogger.info(
-        "GameRepository: Upsert réussi. Déclenchement de la notification Stream.",
-      );
       await _refreshStream();
     } catch (e, stack) {
       AppLogger.error(
-        "GameRepository: Échec de l'upsert pour ${game.displayName}",
+        "GameRepository: Échec de l'upsert (${game.executablePath})",
         e,
         stack,
       );
@@ -131,7 +89,6 @@ class GameRepositoryImpl implements GameRepository {
   Future<void> deleteGame(Game game) async {
     try {
       final db = await dbHelper.database;
-      AppLogger.warning("GameRepository: Suppression du jeu ID: ${game.id}");
 
       final count = await db.delete(
         'games',
@@ -140,18 +97,12 @@ class GameRepositoryImpl implements GameRepository {
       );
 
       if (count > 0) {
-        AppLogger.info(
-          "GameRepository: Jeu supprimé avec succès. Rafraîchissement du flux.",
-        );
+        AppLogger.info("GameRepository: Jeu supprimé (ID: ${game.id})");
         await _refreshStream();
-      } else {
-        AppLogger.warning(
-          "GameRepository: Aucun jeu trouvé avec l'ID ${game.id} pour la suppression.",
-        );
       }
     } catch (e, stack) {
       AppLogger.error(
-        "GameRepository: Erreur lors de la suppression du jeu ID ${game.id}",
+        "GameRepository: Erreur lors de la suppression (ID: ${game.id})",
         e,
         stack,
       );
@@ -171,8 +122,6 @@ class GameRepositoryImpl implements GameRepository {
       );
 
       if (maps.isEmpty) return null;
-
-      AppLogger.debug("GameRepository: Jeu trouvé par ID IGDB ($igdbId)");
       return _mapToEntity(maps.first);
     } catch (e) {
       AppLogger.error("GameRepository: Erreur lors de getByIgdbId($igdbId)", e);
@@ -185,18 +134,15 @@ class GameRepositoryImpl implements GameRepository {
     try {
       final db = await dbHelper.database;
 
-      // Utilisation de LIKE pour être moins sensible à la casse sur Windows
-      // ou comparaison directe selon ton besoin
+      // NOCASE est crucial pour Windows car le système de fichiers n'est pas case-sensitive
       final List<Map<String, dynamic>> maps = await db.query(
         'games',
-        where: 'executable_path = ?',
+        where: 'executable_path = ? COLLATE NOCASE',
         whereArgs: [executablePath],
         limit: 1,
       );
 
       if (maps.isEmpty) return null;
-
-      AppLogger.debug("GameRepository: Jeu trouvé par Path ($executablePath)");
       return _mapToEntity(maps.first);
     } catch (e) {
       AppLogger.error(
@@ -207,24 +153,27 @@ class GameRepositoryImpl implements GameRepository {
     }
   }
 
-  /// Helper interne pour transformer un Map SQLite en Entity Game
-  /// (Évite de répéter la logique de parsing présente dans getAllGames)
+  /// Centralisation du mapping pour garantir la cohérence des données
   Game _mapToEntity(Map<String, dynamic> map) {
-    return Game(
-      id: map['id'],
-      igdbId: map['igdb_id'],
-      displayName: map['display_name'],
-      executablePath: map['executable_path'],
-      playtimeSeconds: map['playtime_seconds'] ?? 0,
-      isFavorite: map['is_favorite'] == 1,
-      lastPlayedAt: map['last_played_at'] != null
-          ? DateTime.parse(map['last_played_at'])
-          : null,
-    );
+    try {
+      return Game(
+        id: map['id'] as int?,
+        igdbId: map['igdb_id'] as int?,
+        executablePath: map['executable_path'] as String,
+        playtimeSeconds: map['playtime_seconds'] as int? ?? 0,
+        isFavorite: (map['is_favorite'] as int? ?? 0) == 1,
+        lastPlayedAt: map['last_played_at'] != null
+            ? DateTime.tryParse(map['last_played_at'] as String)
+            : null,
+      );
+    } catch (e) {
+      AppLogger.error("GameRepository: Erreur de mapping SQL -> Entity", e);
+      rethrow;
+    }
   }
 
   void dispose() {
-    AppLogger.info("GameRepository: Fermeture définitive du StreamController.");
+    AppLogger.info("GameRepository: Fermeture du StreamController.");
     _gamesStreamController.close();
   }
 }

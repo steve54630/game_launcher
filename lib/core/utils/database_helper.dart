@@ -77,7 +77,6 @@ class DatabaseHelper {
       CREATE TABLE games (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         igdb_id INTEGER,
-        display_name TEXT NOT NULL,
         executable_path TEXT NOT NULL UNIQUE,
         playtime_seconds INTEGER DEFAULT 0,
         last_played_at TEXT,

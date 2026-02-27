@@ -46,6 +46,10 @@ dependencies:
   win32: ^5.10.0
   ffi: ^2.2.0
   process: ^5.0.5
+  youtube_explode_dart: ^2.2.2 # Pour extraire l'URL du flux
+  media_kit: ^1.1.10 # Le meilleur lecteur vidéo pour Windows Desktop
+  media_kit_video: ^1.1.10
+  media_kit_libs_windows_video: ^1.0.11
 
 dev_dependencies:
   flutter_test:
