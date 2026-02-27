@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:game_launcher/core/providers/usecase.providers.dart';
+import 'package:game_launcher/core/providers/ui.providers.dart';
 import 'package:game_launcher/presentation/widgets/search_all/header.widget.dart';
 import 'package:game_launcher/presentation/widgets/search_all/import_item.widget.dart';
 import 'package:game_launcher/presentation/widgets/search_all/validation.widget.dart';
@@ -14,7 +14,7 @@ class MultiGameImportPage extends ConsumerWidget {
     final state = ref.watch(importAllProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text("IMPORTATION MASSIVE")),
+      appBar: AppBar(title: const Text("Ajout de jeu par dossier")),
       body: Column(
         children: [
           const HeaderInfo(),

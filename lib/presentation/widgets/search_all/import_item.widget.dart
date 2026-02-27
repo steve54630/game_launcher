@@ -2,7 +2,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:game_launcher/core/providers/ui.providers.dart';
-import 'package:game_launcher/core/providers/usecase.providers.dart';
 import 'package:game_launcher/core/theme/app.spacing.dart';
 import 'package:game_launcher/domain/entities/discovery_result.entity.dart';
 import 'package:game_launcher/presentation/widgets/search/game_search.widget.dart';

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:game_launcher/core/providers/ui.providers.dart';
-import 'package:game_launcher/core/providers/usecase.providers.dart';
 import 'package:game_launcher/core/theme/app.spacing.dart';
 
 class BottomValidationBar extends ConsumerWidget {
@@ -21,10 +20,8 @@ class BottomValidationBar extends ConsumerWidget {
         border: Border(top: BorderSide(color: Theme.of(context).dividerColor)),
       ),
       child: SafeArea(
-        // Important pour les écrans Windows avec barres de tâches
         child: Row(
           children: [
-            // Rappel discret de l'état
             Icon(
               Icons.library_add_check,
               color: canImport ? Colors.green : Colors.grey,
@@ -38,7 +35,6 @@ class BottomValidationBar extends ConsumerWidget {
               ),
             ),
             const Spacer(),
-            // L'action finale
             ElevatedButton.icon(
               onPressed: canImport
                   ? () => _handleFinalImport(ref, context)

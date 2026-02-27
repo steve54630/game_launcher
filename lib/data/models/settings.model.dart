@@ -11,11 +11,18 @@ class SettingsModel extends AppSettings {
   factory SettingsModel.fromDbRows(List<Map<String, dynamic>> rows) {
     final settingsMap = {for (var row in rows) row['key']: row['value']};
 
+    // Helper pour parser robustement (gère 'true', 1, ou "1")
+    bool parseBool(dynamic value) {
+      if (value == null) return false;
+      return value == 'true' || value == 1 || value == '1';
+    }
+
     return SettingsModel(
-      minimizeOnLaunch: settingsMap['minimize_on_launch'] == 'true',
-      closeOnExit: settingsMap['close_on_exit'] == 'true',
-      themeMode: settingsMap['theme_mode'] ?? 'system',
-      libraryDisplayMode: settingsMap['library_display_mode'] ?? 'card',
+      minimizeOnLaunch: parseBool(settingsMap['minimize_on_launch']),
+      closeOnExit: parseBool(settingsMap['close_on_exit']),
+      themeMode: settingsMap['theme_mode']?.toString() ?? 'system',
+      libraryDisplayMode:
+          settingsMap['library_display_mode']?.toString() ?? 'card',
     );
   }
 
@@ -35,8 +42,8 @@ class SettingsModel extends AppSettings {
 
   List<Map<String, dynamic>> toDbRows() {
     return [
-      {'key': 'minimize_on_launch', 'value': minimizeOnLaunch.toString()},
-      {'key': 'close_on_exit', 'value': closeOnExit.toString()},
+      {'key': 'minimize_on_launch', 'value': minimizeOnLaunch ? 1 : 0},
+      {'key': 'close_on_exit', 'value': closeOnExit ? 1 : 0},
       {'key': 'theme_mode', 'value': themeMode},
       {'key': 'library_display_mode', 'value': libraryDisplayMode},
     ];

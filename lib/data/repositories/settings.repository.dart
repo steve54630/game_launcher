@@ -12,40 +12,30 @@ class AppSettingsRepositoryImpl implements AppSettingsRepository {
     'minimize_on_launch',
     'close_on_exit',
     'theme_mode',
-    'card',
+    'library_display_mode',
   ];
 
   AppSettingsRepositoryImpl(this.dbHelper);
 
   @override
   Future<AppSettings> getSettings() async {
-    AppLogger.info("SettingsRepo: Lecture des paramètres de l'application...");
     try {
       final db = await dbHelper.database;
 
+      // Génère dynamiquement la chaîne "?, ?, ?, ?" selon le nombre de clés
+      final placeholders = List.filled(_settingsKeys.length, '?').join(', ');
+
       final List<Map<String, dynamic>> maps = await db.query(
         'app_settings',
-        where: 'key IN (?, ?, ?)',
+        where: 'key IN ($placeholders)',
         whereArgs: _settingsKeys,
       );
 
-      if (maps.isEmpty) {
-        AppLogger.info(
-          "SettingsRepo: Aucun paramètre trouvé en base, chargement des valeurs par défaut.",
-        );
-        return AppSettings.defaultSettings();
-      }
+      if (maps.isEmpty) return AppSettings.defaultSettings();
 
-      AppLogger.info(
-        "SettingsRepo: ${maps.length} clés de configuration récupérées.",
-      );
       return SettingsModel.fromDbRows(maps);
     } catch (e, stack) {
-      AppLogger.error(
-        "SettingsRepo: Échec de lecture des paramètres, repli sur les valeurs par défaut",
-        e,
-        stack,
-      );
+      AppLogger.error("SettingsRepo: Erreur de lecture", e, stack);
       return AppSettings.defaultSettings();
     }
   }
@@ -103,7 +93,7 @@ class AppSettingsRepositoryImpl implements AppSettingsRepository {
 
       final count = await db.delete(
         'app_settings',
-        where: 'key IN (?, ?, ?)',
+        where: 'key IN (?, ?, ?, ?)',
         whereArgs: _settingsKeys,
       );
 

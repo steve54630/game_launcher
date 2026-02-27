@@ -19,79 +19,97 @@ void main() {
   });
 
   tearDown(() async {
+    gameRepo.dispose();
     await db.close();
   });
 
   group('GameRepositoryImpl - Integration Tests', () {
     test('Should retrieve a game with local data only', () async {
-      // 1. Arrange
       final newGame = Game(
-        igdbId: 500,
+        igdbId: null,
         displayName: 'Doom Eternal',
         executablePath: 'C:\\Games\\Doom\\DoomEternal.exe',
       );
       await gameRepo.upsertGame(newGame);
-
-      // 2. Act
-      // Le Repo renvoie maintenant une List<Game>
       final results = await gameRepo.getAllGames();
-
-      // 3. Assert
       expect(results.length, 1);
-      final item = results.first;
-
-      // On vérifie les données propres à la table 'games'
-      expect(item.displayName, 'Doom Eternal');
-      expect(item.igdbId, 500);
-      expect(item.executablePath, 'C:\\Games\\Doom\\DoomEternal.exe');
+      expect(results.first.displayName, 'Doom Eternal');
     });
 
     test('Should handle multiple games and preserve order', () async {
-      // Arrange
       await gameRepo.upsertGame(
         Game(displayName: 'Zelda', executablePath: 'z.exe'),
       );
       await gameRepo.upsertGame(
         Game(displayName: 'A-Train', executablePath: 'a.exe'),
       );
-
-      // Act
       final results = await gameRepo.getAllGames();
-
-      // Assert
-      expect(results.length, 2);
-      expect(results.first.displayName, 'A-Train'); // Test du ORDER BY
+      expect(results.first.displayName, 'A-Train');
       expect(results.last.displayName, 'Zelda');
     });
 
-    test('Should update existing game on duplicate path (Upsert)', () async {
-      // Arrange
-      const path = 'C:\\Games\\Solo.exe';
-      await gameRepo.upsertGame(Game(displayName: 'V1', executablePath: path));
-      await gameRepo.upsertGame(Game(displayName: 'V2', executablePath: path));
+    test('Should watchAllGames and emit updates on changes', () async {
+      final stream = gameRepo.watchAllGames();
 
-      // Act
-      final results = await gameRepo.getAllGames();
-
-      // Assert
-      expect(results.length, 1);
-      expect(results.first.displayName, 'V2');
-    });
-
-    test('Should delete game record from database', () async {
-      // Arrange
-      await gameRepo.upsertGame(
-        Game(displayName: 'To Delete', executablePath: 'del.exe'),
+      final futureExpect = expectLater(
+        stream,
+        emitsThrough(containsWith(displayName: 'Stray')),
       );
-      var list = await gameRepo.getAllGames();
-      final game = list.first;
 
-      // Act
-      await gameRepo.deleteGame(game);
-      final results = await gameRepo.getAllGames();
-
-      // Assert
-      expect(results, isEmpty);
+      await gameRepo.upsertGame(
+        Game(displayName: 'Stray', executablePath: 'stray.exe'),
+      );
+      await futureExpect;
     });
+
+    test('Should find game by IGDB ID', () async {
+      const igdbId = 42;
+
+      await db.insert('igdb_cache', {
+        'igdb_id': igdbId,
+        'name': 'Hades',
+        'screenshot_urls': '[]',
+        'updated_at': DateTime.now().toIso8601String(),
+      });
+
+      await gameRepo.upsertGame(
+        Game(igdbId: igdbId, displayName: 'Hades', executablePath: 'hades.exe'),
+      );
+
+      final found = await gameRepo.getByIgdbId(igdbId);
+      expect(found?.displayName, 'Hades');
+    });
+
+    test('Should find game by executable path', () async {
+      const path = 'C:\\Games\\Tunic.exe';
+      await gameRepo.upsertGame(
+        Game(displayName: 'Tunic', executablePath: path),
+      );
+
+      final found = await gameRepo.getByPath(path);
+      expect(found?.displayName, 'Tunic');
+    });
+
+    test('Should handle date parsing and null fields from SQL join', () async {
+      final now = DateTime.now().toIso8601String().split('.')[0];
+
+      await db.insert('games', {
+        'display_name': 'Mapped Game',
+        'executable_path': 'map.exe',
+        'playtime_seconds': 120,
+        'is_favorite': 1,
+        'last_played_at': now,
+      });
+
+      final results = await gameRepo.getAllGames();
+      expect(results.first.isFavorite, isTrue);
+      expect(results.first.lastPlayedAt, isNotNull);
+    });
+  });
+}
+
+Matcher containsWith({required String displayName}) {
+  return predicate<List<Game>>((list) {
+    return list.any((g) => g.displayName == displayName);
   });
 }

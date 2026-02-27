@@ -34,10 +34,10 @@ class MetadataPreview extends StatelessWidget {
                 height: 28,
                 fit: BoxFit.cover,
                 // Gestion d'erreur pour les images réseau
-                errorBuilder: (_, __, ___) => Container(
+                errorBuilder: (_, _, _) => Container(
                   width: 20,
                   height: 28,
-                  color: Colors.grey.withOpacity(0.2),
+                  color: Colors.grey.withValues(alpha: 0.2),
                   child: const Icon(Icons.broken_image, size: 10),
                 ),
               ),

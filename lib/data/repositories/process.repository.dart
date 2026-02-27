@@ -120,6 +120,8 @@ class ProcessRepositoryImpl implements ProcessRepository {
         final segments = _fileSystem.path.split(path);
 
         if (ExecutableFilter.isGameExecutable(path, segments)) {
+          // RÉCUPÉRATION DE LA TAILLE (File Size)
+          // On le fait de manière asynchrone ici pour ne pas bloquer le stream
           final fileSize = await entity.length();
           final fileName = _fileSystem.path.basename(path);
 

@@ -78,7 +78,9 @@ class GameCard extends ConsumerWidget {
                           style: TextStyle(
                             fontSize: 11,
                             fontFamily: 'monospace',
-                            color: AppColors.textSecondary.withOpacity(0.6),
+                            color: AppColors.textSecondary.withValues(
+                              alpha: .6,
+                            ),
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,

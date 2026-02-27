@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:game_launcher/core/providers/ui.providers.dart';
-import 'package:game_launcher/core/providers/usecase.providers.dart';
 import 'package:game_launcher/core/theme/app.spacing.dart';
 import 'package:game_launcher/domain/entities/search_result.entity.dart';
 import 'package:game_launcher/presentation/widgets/common/gallery.widget.dart';
