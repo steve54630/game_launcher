@@ -29,8 +29,7 @@ void main() {
       final model = GameModel(
         id: 1,
         igdbId: 123,
-        executablePath:
-            'C:/Games/Hades2.exe', // Utilisation du param nommé correct
+        executablePath: 'C:/Games/Hades2.exe',
         playtimeSeconds: 3600,
         lastPlayedAt: tDateTime,
         isFavorite: true,
@@ -66,7 +65,7 @@ void main() {
         'id': 1,
         'igdb_id': 100,
         'executable_path': '/path',
-        'name': 'Cyberpunk 2077', // Nom IGDB different du display name
+        'name': 'Cyberpunk 2077',
         'cover_url': 'http://cover.jpg',
         'genre_id': 5,
         'genre_name': 'RPG',
@@ -84,18 +83,22 @@ void main() {
   group('GameWithDetailsModel - Factory', () {
     test('fromDiscovery should map discovery result correctly', () {
       final mockMatch = IgdbSearchResult(igdbId: 99, name: 'Matched Name');
+
+      // Mise à jour : Utilisation de selectedMatch au lieu de igdbMatch
       final discovery = DiscoveryResult(
         rawName: 'Game.exe',
         fullPath: 'C:/Game.exe',
         pathSegments: ['Games'],
         fileSize: 1024,
-        igdbMatch: mockMatch,
+        selectedMatch: mockMatch,
+        status: DiscoveryStatus.matched,
       );
 
       final result = GameWithDetailsModel.fromDiscovery(discovery);
 
       expect(result.game.igdbId, 99);
       expect(result.details?.name, 'Matched Name');
+      expect(result.game.executablePath, 'C:/Game.exe');
     });
   });
 }

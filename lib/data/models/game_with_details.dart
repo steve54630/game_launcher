@@ -6,12 +6,13 @@ class GameWithDetailsModel extends GameWithDetails {
   GameWithDetailsModel({required super.game, super.details});
 
   factory GameWithDetailsModel.fromDiscovery(DiscoveryResult result) {
+    // On part du principe que la validation isReady est faite en amont
     return GameWithDetailsModel(
       game: Game(
         executablePath: result.fullPath,
-        igdbId: result.igdbMatch?.igdbId,
+        igdbId: result.selectedMatch?.igdbId,
       ),
-      details: result.igdbMatch,
+      details: result.selectedMatch,
     );
   }
 }

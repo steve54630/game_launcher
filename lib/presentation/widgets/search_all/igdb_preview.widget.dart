@@ -8,8 +8,8 @@ class MetadataPreview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final match =
-        result.igdbMatch ??
-        (result.igdbProposals.isNotEmpty ? result.igdbProposals.first : null);
+        result.selectedMatch ??
+        (result.proposals.isNotEmpty ? result.proposals.first : null);
 
     if (match == null) {
       return const Text(
@@ -19,7 +19,7 @@ class MetadataPreview extends StatelessWidget {
     }
 
     // On change la couleur si c'est un match validé manuellement (optionnel mais sympa pour l'UX)
-    final isManualMatch = result.igdbMatch != null;
+    final isManualMatch = result.selectedMatch != null;
 
     return Row(
       children: [

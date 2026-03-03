@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:game_launcher/core/providers/ui.providers.dart';
+import 'package:game_launcher/presentation/state/import_all.state.dart';
 import 'package:game_launcher/presentation/widgets/search_all/header.widget.dart';
 import 'package:game_launcher/presentation/widgets/search_all/import_item.widget.dart';
 import 'package:game_launcher/presentation/widgets/search_all/validation.widget.dart';
@@ -11,6 +12,7 @@ class MultiGameImportPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // On précise le type ImportAllState pour bénéficier de l'autocomplétion
     final state = ref.watch(importAllProvider);
 
     return Scaffold(
@@ -21,15 +23,15 @@ class MultiGameImportPage extends ConsumerWidget {
 
           Expanded(child: _buildBody(context, state)),
 
-          // On n'affiche la barre que s'il y a des résultats et qu'on ne scanne pas
-          if (!state.isScanning && state.results.isNotEmpty)
-            BottomValidationBar(selectedCount: state.selectedPaths.length),
+          // Utilisation du getter readyToImport pour afficher le compteur réel
+          if (!state.isScanning && state.items.isNotEmpty)
+            BottomValidationBar(selectedCount: state.readyToImport.length),
         ],
       ),
     );
   }
 
-  Widget _buildBody(BuildContext context, dynamic state) {
+  Widget _buildBody(BuildContext context, ImportAllState state) {
     if (state.isScanning) {
       return const Center(
         child: Column(
@@ -37,7 +39,7 @@ class MultiGameImportPage extends ConsumerWidget {
           children: [
             CircularProgressIndicator(),
             SizedBox(height: AppSpacing.m),
-            Text("Analyse des fichiers en cours..."),
+            Text("Analyse des fichiers et matching IGDB..."),
           ],
         ),
       );
@@ -47,42 +49,57 @@ class MultiGameImportPage extends ConsumerWidget {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.l),
-          child: Text(
-            state.error!,
-            textAlign: TextAlign.center,
-            style: const TextStyle(color: Colors.red),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.error_outline, color: Colors.red, size: 48),
+              const SizedBox(height: AppSpacing.m),
+              Text(
+                state.error!,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.red),
+              ),
+            ],
           ),
         ),
       );
     }
 
-    if (state.results.isEmpty) {
+    // Changement : results devient items
+    if (state.items.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              Icons.folder_zip_outlined,
+              Icons.drive_folder_upload_outlined,
               size: 64,
               color: Theme.of(context).disabledColor,
             ),
             const SizedBox(height: AppSpacing.m),
             const Text("Aucun exécutable trouvé."),
-            const Text(
-              "Lancez un scan depuis le header.",
-              style: TextStyle(fontSize: 12, color: Colors.grey),
+            Text(
+              "Sélectionnez un dossier contenant vos jeux pour commencer.",
+              style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).hintColor,
+              ),
             ),
           ],
         ),
       );
     }
 
-    // On utilise directement la liste complète sans filtrage
     return ListView.builder(
-      itemCount: state.results.length,
+      // Changement : results devient items
+      itemCount: state.items.length,
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.s),
       itemBuilder: (context, index) {
-        return ImportItemTile(result: state.results[index]);
+        // On passe l'item spécifique à la tuile
+        return ImportItemTile(
+          key: ValueKey(state.items[index].fullPath),
+          result: state.items[index],
+        );
       },
     );
   }

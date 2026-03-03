@@ -1,38 +1,43 @@
 import 'package:game_launcher/domain/entities/discovery_result.entity.dart';
 
 class ImportAllState {
-  final List<DiscoveryResult> results;
-  final Set<String>
-  selectedPaths; // Utiliser un Set pour la performance des lookups
+  final List<DiscoveryResult> items; // La source de vérité unique
   final bool isScanning;
   final bool isSaving;
   final String? error;
-  final String currentPath;
+  final String currentScanningPath; // Juste pour le feedback visuel du scan
 
   ImportAllState({
-    this.results = const [],
-    this.selectedPaths = const {},
+    this.items = const [],
     this.isScanning = false,
-    this.error,
-    this.currentPath = "",
     this.isSaving = false,
+    this.error,
+    this.currentScanningPath = "",
   });
 
+  // Getters calculés pour éviter de stocker des variables redondantes
+  List<DiscoveryResult> get selectedItems =>
+      items.where((e) => e.isSelected).toList();
+  List<DiscoveryResult> get readyToImport =>
+      items.where((e) => e.isReady).toList();
+  double get progress => items.isEmpty
+      ? 0
+      : items.where((e) => e.status != DiscoveryStatus.pending).length /
+            items.length;
+
   ImportAllState copyWith({
-    List<DiscoveryResult>? results,
-    Set<String>? selectedPaths,
+    List<DiscoveryResult>? items,
     bool? isScanning,
-    String? error,
-    String currentPath = "",
     bool? isSaving,
+    String? error,
+    String? currentScanningPath,
   }) {
     return ImportAllState(
-      results: results ?? this.results,
-      selectedPaths: selectedPaths ?? this.selectedPaths,
+      items: items ?? this.items,
       isScanning: isScanning ?? this.isScanning,
       isSaving: isSaving ?? this.isSaving,
       error: error,
-      currentPath: currentPath,
+      currentScanningPath: currentScanningPath ?? this.currentScanningPath,
     );
   }
 }

@@ -12,6 +12,10 @@ class ImportActionButton extends ConsumerWidget {
     final state = ref.watch(importProvider);
     final notifier = ref.read(importProvider.notifier);
 
+    // Le getter isReady centralise maintenant toute la logique métier
+    // (isSelected && selectedMatch != null)
+    final canImport = state.result?.isReady ?? false;
+
     return Column(
       children: [
         if (state.error != null)
@@ -24,14 +28,10 @@ class ImportActionButton extends ConsumerWidget {
           height: 55,
           child: ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: state.canImport
-                  ? null
-                  : Colors.grey.withAlpha(25),
+              backgroundColor: canImport ? null : Colors.grey.withAlpha(25),
             ),
-            onPressed: state.canImport && !state.isSaving
+            onPressed: canImport && !state.isSaving
                 ? () async {
-                    // On appelle executeImport sans argument car le notifier
-                    // possède déjà le selectedIgdbGame dans son state.
                     final success = await notifier.executeImport();
 
                     if (success && context.mounted) {
@@ -41,8 +41,12 @@ class ImportActionButton extends ConsumerWidget {
                           backgroundColor: Colors.green,
                         ),
                       );
-                      notifier.reset();
 
+                      // On reset les providers avant de rediriger (SPA)
+                      notifier.reset();
+                      ref.read(gameSearchTermProvider.notifier).updateTerm("");
+
+                      // Redirection vers la bibliothèque (Index 0)
                       ref.read(navigationIndexProvider.notifier).state = 0;
                     }
                   }

@@ -1,46 +1,22 @@
-import 'package:game_launcher/domain/entities/search_result.entity.dart';
+import 'package:game_launcher/domain/entities/discovery_result.entity.dart';
 
 class ImportState {
-  final String? localPath;
-  final String? searchName;
-  final IgdbSearchResult? selectedIgdbGame;
+  final DiscoveryResult?
+  result; // Contient tout : path, match, status, proposals
   final bool isSaving;
-  final bool isSearching;
   final String? error;
-  final List<IgdbSearchResult> searchResults;
 
-  ImportState({
-    this.localPath,
-    this.searchName,
-    this.selectedIgdbGame,
-    this.isSaving = false,
-    this.isSearching = false,
-    this.error,
-    this.searchResults = const [],
-  });
-
-  bool get canImport =>
-      localPath != null && selectedIgdbGame != null && !isSaving;
+  ImportState({this.result, this.isSaving = false, this.error});
 
   ImportState copyWith({
-    String? localPath,
-    String? searchName,
-    IgdbSearchResult? Function()? selectedIgdbGame,
+    DiscoveryResult? Function()? result,
     bool? isSaving,
-    bool? isSearching,
-    String? Function()? errorMessage,
-    List<IgdbSearchResult>? searchResults,
+    String? error,
   }) {
     return ImportState(
-      localPath: localPath ?? this.localPath,
-      searchName: searchName ?? this.searchName,
-      selectedIgdbGame: selectedIgdbGame != null
-          ? selectedIgdbGame()
-          : this.selectedIgdbGame,
+      result: result != null ? result() : this.result,
       isSaving: isSaving ?? this.isSaving,
-      isSearching: isSearching ?? this.isSearching,
-      error: errorMessage != null ? errorMessage() : error,
-      searchResults: searchResults ?? this.searchResults,
+      error: error,
     );
   }
 }

@@ -12,9 +12,11 @@ class HeaderInfo extends ConsumerWidget {
     final state = ref.watch(importAllProvider);
     final notifier = ref.read(importAllProvider.notifier);
 
-    final isAllSelected =
-        state.results.isNotEmpty &&
-        state.selectedPaths.length == state.results.length;
+    // Calcul précis de l'état de la sélection
+    final hasItems = state.items.isNotEmpty;
+    final selectedCount = state.selectedItems.length;
+    final isAllSelected = hasItems && selectedCount == state.items.length;
+    final isPartiallySelected = hasItems && selectedCount > 0 && !isAllSelected;
 
     return Container(
       padding: const EdgeInsets.all(AppSpacing.m),
@@ -24,55 +26,63 @@ class HeaderInfo extends ConsumerWidget {
           bottom: BorderSide(color: Theme.of(context).dividerColor),
         ),
       ),
-      child: Column(
+      child: Row(
         children: [
-          Row(
-            children: [
-              // 1. Contrôle de sélection globale
-              Checkbox(
-                value: isAllSelected,
-                tristate: state.selectedPaths.isNotEmpty && !isAllSelected,
-                onChanged: (value) => notifier.toggleAll(value ?? false),
-              ),
-              const SizedBox(width: AppSpacing.s),
-              const Text(
-                "TOUT SÉLECTIONNER",
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
+          // 1. Contrôle de sélection globale
+          Checkbox(
+            value: isAllSelected,
+            tristate:
+                isPartiallySelected, // Affiche un tiret si sélection partielle
+            onChanged: hasItems
+                ? (value) => notifier.toggleAll(value ?? false)
+                : null,
+          ),
+          const SizedBox(width: AppSpacing.s),
+          Text(
+            isPartiallySelected
+                ? "$selectedCount SÉLECTIONNÉS"
+                : "TOUT SÉLECTIONNER",
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
 
-              const Spacer(),
+          const Spacer(),
 
-              // 2. Info sur le chemin scanné + Bouton de changement
-              if (state.currentPath.isNotEmpty)
-                Row(
-                  children: [
-                    Chip(
+          // 2. Info sur le chemin scanné + Bouton de changement
+          if (state.currentScanningPath.isNotEmpty || state.items.isNotEmpty)
+            Row(
+              children: [
+                if (state.currentScanningPath.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(right: AppSpacing.s),
+                    child: Chip(
                       label: Text(
-                        state.currentPath,
+                        state.currentScanningPath,
                         style: const TextStyle(fontSize: 11),
                       ),
                       avatar: const Icon(Icons.folder_open, size: 16),
                       backgroundColor: Theme.of(context).cardColor,
                     ),
-                    const SizedBox(width: AppSpacing.s),
-                    IconButton(
-                      icon: const Icon(
-                        Icons.edit_location_alt_outlined,
-                        size: 20,
-                      ),
-                      tooltip: "Changer de dossier",
-                      onPressed: () => _pickDirectory(ref),
-                    ),
-                  ],
-                )
-              else
-                ElevatedButton.icon(
-                  onPressed: () => _pickDirectory(ref),
-                  icon: const Icon(Icons.search, size: 18),
-                  label: const Text("SCANNER UN DOSSIER"),
+                  ),
+                IconButton(
+                  icon: const Icon(Icons.refresh, size: 20),
+                  tooltip: "Relancer le scan",
+                  onPressed: state.isScanning
+                      ? null
+                      : () => notifier.scanDirectory(state.currentScanningPath),
                 ),
-            ],
-          ),
+                IconButton(
+                  icon: const Icon(Icons.edit_location_alt_outlined, size: 20),
+                  tooltip: "Changer de dossier",
+                  onPressed: () => _pickDirectory(ref),
+                ),
+              ],
+            )
+          else
+            ElevatedButton.icon(
+              onPressed: state.isScanning ? null : () => _pickDirectory(ref),
+              icon: const Icon(Icons.search, size: 18),
+              label: const Text("SCANNER UN DOSSIER"),
+            ),
         ],
       ),
     );

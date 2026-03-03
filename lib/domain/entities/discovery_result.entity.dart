@@ -1,41 +1,55 @@
 import 'package:game_launcher/domain/entities/search_result.entity.dart';
 
+enum DiscoveryStatus { pending, searching, matched, noMatch, error }
+
 class DiscoveryResult {
   final String rawName;
   final String fullPath;
-  final List<String> pathSegments;
-  final String? selectedSearchTerm;
-  final List<IgdbSearchResult> igdbProposals; // List non-nullable par défaut
-  final IgdbSearchResult? igdbMatch; // Le choix final
   final int fileSize;
+  final List<String> pathSegments;
+
+  final DiscoveryStatus status;
+  final String? customSearchTerm;
+  final List<IgdbSearchResult> proposals;
+  final IgdbSearchResult? selectedMatch;
+  final bool isSelected;
 
   DiscoveryResult({
     required this.rawName,
     required this.fullPath,
     required this.pathSegments,
-    this.selectedSearchTerm,
-    this.igdbProposals = const [],
-    this.igdbMatch,
     required this.fileSize,
+    this.status = DiscoveryStatus.pending,
+    this.customSearchTerm,
+    this.proposals = const [],
+    this.selectedMatch,
+    this.isSelected = true,
   });
 
+  String get effectiveSearchTerm => customSearchTerm ?? rawName;
+  bool get isReady => selectedMatch != null && isSelected;
+  bool get needsReview =>
+      status == DiscoveryStatus.noMatch || selectedMatch == null;
+
   DiscoveryResult copyWith({
-    String? rawName,
-    String? fullPath,
-    List<String>? pathSegments,
-    String? selectedSearchTerm,
-    List<IgdbSearchResult>? igdbProposals,
-    IgdbSearchResult? Function()? igdbMatch, // Pattern pour null
-    int? fileSize,
+    DiscoveryStatus? status,
+    String? customSearchTerm,
+    List<IgdbSearchResult>? proposals,
+    IgdbSearchResult? Function()? selectedMatch,
+    bool? isSelected,
   }) {
     return DiscoveryResult(
-      rawName: rawName ?? this.rawName,
-      fullPath: fullPath ?? this.fullPath,
-      pathSegments: pathSegments ?? this.pathSegments,
-      selectedSearchTerm: selectedSearchTerm ?? this.selectedSearchTerm,
-      igdbProposals: igdbProposals ?? this.igdbProposals,
-      igdbMatch: igdbMatch != null ? igdbMatch() : this.igdbMatch,
-      fileSize: fileSize ?? this.fileSize,
+      rawName: rawName,
+      fullPath: fullPath,
+      pathSegments: pathSegments,
+      fileSize: fileSize,
+      status: status ?? this.status,
+      customSearchTerm: customSearchTerm ?? this.customSearchTerm,
+      proposals: proposals ?? this.proposals,
+      selectedMatch: selectedMatch != null
+          ? selectedMatch()
+          : this.selectedMatch,
+      isSelected: isSelected ?? this.isSelected,
     );
   }
 }

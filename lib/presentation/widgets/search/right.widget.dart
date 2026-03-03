@@ -24,39 +24,30 @@ class RightImportSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final searchTerm = ref.watch(gameSearchTermProvider);
     final state = ref.watch(importProvider);
-    final game = state.selectedIgdbGame;
+
+    // On extrait le match depuis le DiscoveryResult
+    final game = state.result?.selectedMatch;
     final searchAsync = ref.watch(igdbResultsProvider);
 
-    // Écoute les résultats de recherche pour l'auto-matching
+    // Écoute les résultats pour l'auto-matching
     ref.listen<AsyncValue<List<IgdbSearchResult>>>(igdbResultsProvider, (
       previous,
       next,
     ) {
       final notifier = ref.read(importProvider.notifier);
 
-      if (searchTerm.trim().isEmpty) {
-        notifier.setErrorMessage(null);
-        return;
-      }
+      if (searchTerm.trim().isEmpty) return;
 
-      next.when(
-        data: (results) {
-          if (results.isEmpty) {
-            notifier.setErrorMessage("Aucun jeu trouvé sur IGDB.");
-          } else {
-            notifier.setErrorMessage(null);
-
-            // On n'auto-sélectionne le premier résultat QUE si l'utilisateur
-            // n'a pas déjà fait un choix manuel via la modal.
-            if (state.selectedIgdbGame == null) {
-              notifier.applyMatch(results.first);
-            }
+      next.whenData((results) {
+        if (results.isEmpty) {
+          // Utilise une méthode de ton notifier pour gérer l'erreur UI si besoin
+        } else {
+          // On n'auto-sélectionne que si aucun match n'est déjà fixé
+          if (state.result?.selectedMatch == null) {
+            notifier.applyMatch(results.first);
           }
-        },
-        error: (err, stack) =>
-            notifier.setErrorMessage("Erreur technique IGDB."),
-        loading: () {},
-      );
+        }
+      });
     });
 
     return Padding(
@@ -71,6 +62,7 @@ class RightImportSection extends ConsumerWidget {
           const SizedBox(height: AppSpacing.m),
           Expanded(
             child: SingleChildScrollView(
+              // On utilise l'ID IGDB comme clé pour reset le scroll quand le jeu change
               key: ValueKey(game?.igdbId),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -79,19 +71,20 @@ class RightImportSection extends ConsumerWidget {
                     title:
                         game?.name ??
                         (searchTerm.isEmpty
-                            ? "En attente de saisie"
+                            ? "En attente de sélection de fichier"
                             : "Recherche en cours..."),
                     imageUrl: game?.coverUrl,
                     onEdit: () {
+                      // On définit la cible de la modal (BYOK/Interface commune)
                       ref.read(activeImportTargetProvider.notifier).state = ref
                           .read(importProvider.notifier);
 
-                      // On initialise la recherche avec le nom actuellement dans le state
-                      final currentName =
-                          ref.read(importProvider).searchName ?? "";
+                      // On s'assure que la modal s'ouvre avec le terme actuel
+                      final currentTerm =
+                          state.result?.effectiveSearchTerm ?? "";
                       ref
                           .read(gameSearchTermProvider.notifier)
-                          .updateTerm(currentName);
+                          .updateTerm(currentTerm);
 
                       showDialog(
                         context: context,

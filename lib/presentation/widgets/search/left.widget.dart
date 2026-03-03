@@ -17,17 +17,16 @@ class _LeftImportSectionState extends ConsumerState<LeftImportSection> {
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController();
+    // On initialise avec le nom effectif (custom ou raw)
+    final initialName =
+        ref.read(importProvider).result?.effectiveSearchTerm ?? "";
+    _nameController = TextEditingController(text: initialName);
 
-    Future.microtask(() {
-      if (mounted) {
-        final initialName = ref.read(importProvider).searchName ?? "";
-        _nameController.text = initialName;
-        if (initialName.isNotEmpty) {
-          ref.read(gameSearchTermProvider.notifier).updateTerm(initialName);
-        }
-      }
-    });
+    if (initialName.isNotEmpty) {
+      Future.microtask(() {
+        ref.read(gameSearchTermProvider.notifier).updateTerm(initialName);
+      });
+    }
   }
 
   @override
@@ -37,10 +36,7 @@ class _LeftImportSectionState extends ConsumerState<LeftImportSection> {
   }
 
   void _handleNameChange(String value) {
-    // Met à jour le state de l'import (nom affiché)
     ref.read(importProvider.notifier).updateSearchName(value);
-
-    // Met à jour la recherche IGDB (déclenche le provider de résultats)
     ref.read(gameSearchTermProvider.notifier).updateTerm(value);
   }
 
@@ -48,6 +44,19 @@ class _LeftImportSectionState extends ConsumerState<LeftImportSection> {
   Widget build(BuildContext context) {
     final state = ref.watch(importProvider);
     final notifier = ref.read(importProvider.notifier);
+
+    // IMPORTANT : Synchroniser le controller si le fichier change via le picker
+    // (Le nom du fichier devient le nouveau terme de recherche par défaut)
+    ref.listen(importProvider.select((s) => s.result?.effectiveSearchTerm), (
+      prev,
+      next,
+    ) {
+      if (next != null && next != _nameController.text) {
+        _nameController.text = next;
+        // On déclenche la recherche IGDB automatiquement au pick du fichier
+        ref.read(gameSearchTermProvider.notifier).updateTerm(next);
+      }
+    });
 
     return Padding(
       padding: const EdgeInsets.all(AppSpacing.xl),
@@ -64,7 +73,8 @@ class _LeftImportSectionState extends ConsumerState<LeftImportSection> {
           ),
           const SizedBox(height: AppSpacing.m),
           FilePickerZone(
-            selectedPath: state.localPath,
+            // On utilise le path contenu dans l'objet DiscoveryResult
+            selectedPath: state.result?.fullPath,
             onTap: notifier.selectGameFile,
           ),
           const SizedBox(height: AppSpacing.xl),

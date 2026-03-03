@@ -1,10 +1,9 @@
-import 'dart:developer' as dev;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:game_launcher/core/providers/repository.providers.dart';
 import 'package:game_launcher/core/providers/usecase.providers.dart';
-import 'package:game_launcher/domain/entities/game.entity.dart';
+import 'package:game_launcher/data/models/game_with_details.dart';
+import 'package:game_launcher/domain/entities/discovery_result.entity.dart';
 import 'package:game_launcher/domain/entities/search_result.entity.dart';
-import 'package:game_launcher/domain/entities/game_details.entity.dart';
 import 'package:game_launcher/presentation/notifiers/igbd_matchable.notifier.dart';
 import 'package:game_launcher/presentation/state/import.state.dart';
 
@@ -13,71 +12,64 @@ class ImportNotifier extends Notifier<ImportState>
   @override
   ImportState build() => ImportState();
 
-  void setErrorMessage(String? message) {
-    if (message != null) {
-      dev.log('Import Error: $message', name: 'ImportNotifier');
-    }
-    state = state.copyWith(errorMessage: () => message);
-  }
-
   @override
   void applyMatch(IgdbSearchResult game, {String? path}) {
     state = state.copyWith(
-      selectedIgdbGame: () => game,
-      searchName: game.name,
-      errorMessage: () => null,
-    );
-  }
-
-  @override
-  void updateSearchName(String name, {String? path}) {
-    final isDifferent = state.selectedIgdbGame?.name != name;
-    state = state.copyWith(
-      searchName: name,
-      selectedIgdbGame: isDifferent ? () => null : () => state.selectedIgdbGame,
+      result: () => state.result?.copyWith(
+        selectedMatch: () => game,
+        status: DiscoveryStatus.matched,
+      ),
     );
   }
 
   Future<void> selectGameFile() async {
-    try {
-      final path = await ref.read(filePickerService).pickExecutable();
-      if (path == null) return;
+    final path = await ref.read(filePickerService).pickExecutable();
+    if (path == null) return;
 
-      final fileName = path.split(RegExp(r'[/\\]')).last.split('.').first;
+    // On crée un DiscoveryResult "unitaire" à la volée
+    final discovery = DiscoveryResult(
+      fullPath: path,
+      rawName: path.split(RegExp(r'[/\\]')).last.split('.').first,
+      fileSize: 0, // Optionnel ici
+      pathSegments: path.split(RegExp(r'[/\\]')),
+    );
 
-      state = state.copyWith(
-        localPath: path,
-        searchName: fileName,
-        selectedIgdbGame: () => null,
-        errorMessage: () => null,
-      );
-    } catch (e) {
-      state = state.copyWith(
-        errorMessage: () => "Erreur lors de la sélection.",
-      );
-    }
+    state = state.copyWith(result: () => discovery);
   }
 
   Future<bool> executeImport() async {
-    final selected = state.selectedIgdbGame;
-    final path = state.localPath;
-    if (selected == null || path == null) return false;
+    final res = state.result;
+    if (res == null || !res.isReady) return false;
 
-    state = state.copyWith(isSaving: true, errorMessage: () => null);
-
+    state = state.copyWith(isSaving: true);
     try {
-      final gameToSave = GameWithDetails(
-        game: Game(executablePath: path, igdbId: selected.igdbId),
-        details: selected,
-      );
-      await ref.read(saveGameUseCaseProvider).execute(gameToSave);
+      await ref
+          .read(saveGameUseCaseProvider)
+          .execute(GameWithDetailsModel.fromDiscovery(res));
       return true;
-    } catch (e) {
-      state = state.copyWith(errorMessage: () => "Échec de l'enregistrement.");
-      return false;
     } finally {
       state = state.copyWith(isSaving: false);
     }
+  }
+
+  @override
+  void updateSearchName(String name) {
+    final currentResult = state.result;
+    if (currentResult == null) return;
+
+    // On vérifie si le nom saisi est différent du nom du match IGDB actuel
+    final isDifferent = currentResult.selectedMatch?.name != name;
+
+    state = state.copyWith(
+      result: () => currentResult.copyWith(
+        customSearchTerm: name,
+        // Si le nom change, on repasse en pending et on vide le match sélectionné
+        status: isDifferent ? DiscoveryStatus.pending : currentResult.status,
+        selectedMatch: isDifferent
+            ? () => null
+            : () => currentResult.selectedMatch,
+      ),
+    );
   }
 
   void reset() {

@@ -12,14 +12,17 @@ class ImportItemTile extends ConsumerWidget {
   const ImportItemTile({super.key, required this.result});
 
   Future<void> _openFileLocation(String path) async {
+    // Utilisation de shellExecute ou Process.run selon tes préférences Windows
     await Process.run('explorer.exe', ['/select,', path]);
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // On ne surveille QUE le flag isSelected de cet item spécifique
     final isSelected = ref.watch(
       importAllProvider.select(
-        (s) => s.selectedPaths.contains(result.fullPath),
+        (s) =>
+            s.items.firstWhere((i) => i.fullPath == result.fullPath).isSelected,
       ),
     );
 
@@ -74,11 +77,9 @@ class ImportItemTile extends ConsumerWidget {
                 color: Colors.redAccent,
               ),
               tooltip: "Retirer de la liste",
-              onPressed: () {
-                ref
-                    .read(importAllProvider.notifier)
-                    .removeResult(result.fullPath);
-              },
+              onPressed: () => ref
+                  .read(importAllProvider.notifier)
+                  .removeResult(result.fullPath),
             ),
             IconButton(
               icon: const Icon(Icons.edit_note_rounded),
@@ -97,15 +98,23 @@ class ImportItemTile extends ConsumerWidget {
     DiscoveryResult item,
   ) {
     final notifier = ref.read(importAllProvider.notifier);
+
+    // 1. On définit le notifier parent pour la modal (Interface commune)
     ref.read(activeImportTargetProvider.notifier).state = notifier;
+
+    // 2. On définit quel item on édite
     notifier.prepareEditing(item.fullPath);
 
-    // On utilise le nom du fichier comme base de recherche
-    ref.read(gameSearchTermProvider.notifier).updateTerm(item.rawName);
+    // 3. On initialise la recherche avec le effectiveSearchTerm (le nom nettoyé ou saisi)
+    ref
+        .read(gameSearchTermProvider.notifier)
+        .updateTerm(item.effectiveSearchTerm);
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      backgroundColor: Colors
+          .transparent, // Pour un look plus moderne si ton thème le permet
       builder: (_) => const SearchGameModal(),
     );
   }
