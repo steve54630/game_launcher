@@ -1,29 +1,65 @@
 import 'package:game_launcher/domain/entities/settings.entity.dart';
 
-class SettingsModel extends AppSettings {
+class SettingsModel {
+  final bool minimizeOnLaunch;
+  final bool closeOnExit;
+  final String themeMode;
+  final String libraryDisplayMode;
+
   SettingsModel({
-    required super.minimizeOnLaunch,
-    required super.closeOnExit,
-    required super.themeMode,
-    required super.libraryDisplayMode,
+    required this.minimizeOnLaunch,
+    required this.closeOnExit,
+    required this.themeMode,
+    required this.libraryDisplayMode,
   });
 
+  // Transforme les lignes SQL en entité AppSettings
   factory SettingsModel.fromDbRows(List<Map<String, dynamic>> rows) {
-    final settingsMap = {for (var row in rows) row['key']: row['value']};
+    final Map<String, dynamic> data = {
+      for (var row in rows) row['key'] as String: row['value'],
+    };
 
-    // Helper pour parser robustement (gère 'true', 1, ou "1")
-    bool parseBool(dynamic value) {
-      if (value == null) return false;
-      return value == 'true' || value == 1 || value == '1';
-    }
+    final defaultSettings = AppSettings.defaultSettings();
 
     return SettingsModel(
-      minimizeOnLaunch: parseBool(settingsMap['minimize_on_launch']),
-      closeOnExit: parseBool(settingsMap['close_on_exit']),
-      themeMode: settingsMap['theme_mode']?.toString() ?? 'system',
+      minimizeOnLaunch: data['minimize_on_launch'] != null
+          ? data['minimize_on_launch'] == 'true'
+          : defaultSettings.minimizeOnLaunch,
+      closeOnExit: data['close_on_exit'] != null
+          ? data['close_on_exit'] == 'true'
+          : defaultSettings.closeOnExit,
+      themeMode: data['theme_mode'] ?? defaultSettings.themeMode,
       libraryDisplayMode:
-          settingsMap['library_display_mode']?.toString() ?? 'card',
+          data['library_display_mode'] ?? defaultSettings.libraryDisplayMode,
     );
+  }
+
+  factory SettingsModel.fromEntity(AppSettings entity) {
+    return SettingsModel(
+      minimizeOnLaunch: entity.minimizeOnLaunch,
+      closeOnExit: entity.closeOnExit,
+      themeMode: entity.themeMode,
+      libraryDisplayMode: entity.libraryDisplayMode,
+    );
+  }
+
+  AppSettings toEntity() {
+    return AppSettings(
+      minimizeOnLaunch: minimizeOnLaunch,
+      closeOnExit: closeOnExit,
+      themeMode: themeMode,
+      libraryDisplayMode: libraryDisplayMode,
+    );
+  }
+
+  // Transforme l'objet actuel en liste de maps pour le Batch SQL
+  List<Map<String, dynamic>> toDbRows() {
+    return [
+      {'key': 'minimize_on_launch', 'value': minimizeOnLaunch.toString()},
+      {'key': 'close_on_exit', 'value': closeOnExit.toString()},
+      {'key': 'theme_mode', 'value': themeMode},
+      {'key': 'library_display_mode', 'value': libraryDisplayMode},
+    ];
   }
 
   SettingsModel copyWith({
@@ -38,14 +74,5 @@ class SettingsModel extends AppSettings {
       themeMode: themeMode ?? this.themeMode,
       libraryDisplayMode: libraryDisplayMode ?? this.libraryDisplayMode,
     );
-  }
-
-  List<Map<String, dynamic>> toDbRows() {
-    return [
-      {'key': 'minimize_on_launch', 'value': minimizeOnLaunch ? 1 : 0},
-      {'key': 'close_on_exit', 'value': closeOnExit ? 1 : 0},
-      {'key': 'theme_mode', 'value': themeMode},
-      {'key': 'library_display_mode', 'value': libraryDisplayMode},
-    ];
   }
 }

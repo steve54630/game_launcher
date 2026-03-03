@@ -1,15 +1,8 @@
-import 'package:flutter_riverpod/legacy.dart';
 import 'package:game_launcher/domain/entities/game_details.entity.dart';
 
 enum LibrarySortType { name, releaseDate, genre }
 
-// Le state qui contient le type de tri actuel
-final librarySortProvider = StateProvider<LibrarySortType>(
-  (ref) => LibrarySortType.name,
-);
-
 // Si tu veux aussi un filtre par texte plus tard
-final librarySearchProvider = StateProvider<String>((ref) => "");
 
 extension GameListFiltering on List<GameWithDetails> {
   // Logique de filtrage par texte

@@ -4,6 +4,7 @@ import 'package:game_launcher/core/providers/ui.providers.dart';
 import 'package:game_launcher/presentation/pages/import_all.page.dart';
 import 'package:game_launcher/presentation/pages/import_page.dart';
 import 'package:game_launcher/presentation/pages/library.page.dart';
+import 'package:game_launcher/presentation/pages/settings.page.dart';
 import 'package:game_launcher/presentation/widgets/common/connect.widget.dart';
 import 'package:game_launcher/presentation/widgets/common/menu.widget.dart';
 import 'dart:io';
@@ -15,6 +16,7 @@ class MainLayout extends ConsumerWidget {
     LibraryPage(),
     GameImportPage(),
     MultiGameImportPage(),
+    SettingsPage(),
   ];
 
   @override
@@ -27,8 +29,8 @@ class MainLayout extends ConsumerWidget {
           AppNavigationRail(
             selectedIndex: selectedIndex,
             onDestinationSelected: (index) {
-              if (index == 4) exit(0);
-              if (index == 3) {
+              if (index == 5) exit(0);
+              if (index == 4) {
                 _showIgdbAuthDialog(context);
                 return;
               }

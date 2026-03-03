@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/legacy.dart';
 import 'package:game_launcher/core/extensions.dart';
 import 'package:game_launcher/core/providers/repository.providers.dart';
 import 'package:game_launcher/core/providers/usecase.providers.dart';
+import 'package:game_launcher/data/models/settings.model.dart';
 import 'package:game_launcher/domain/entities/credentials.entity.dart';
 import 'package:game_launcher/domain/entities/game_details.entity.dart';
 import 'package:game_launcher/domain/entities/search_result.entity.dart';
@@ -13,6 +14,7 @@ import 'package:game_launcher/presentation/notifiers/credentials.notifier.dart';
 import 'package:game_launcher/presentation/notifiers/import.notifier.dart';
 import 'package:game_launcher/presentation/notifiers/import_all.notifier.dart';
 import 'package:game_launcher/presentation/notifiers/search_game.notifier.dart';
+import 'package:game_launcher/presentation/notifiers/settings.notifier.dart';
 import 'package:game_launcher/presentation/state/import.state.dart';
 import 'package:game_launcher/presentation/state/import_all.state.dart';
 import 'package:game_launcher/presentation/state/matchable.entity.dart';
@@ -72,7 +74,13 @@ final filteredGamesProvider = Provider<AsyncValue<List<GameWithDetails>>>((
   );
 });
 
+final librarySearchProvider = StateProvider<String>((ref) => "");
+
 final igdbCredentialsProvider = FutureProvider<IgdbCredentials?>((ref) async {
   final repo = ref.watch(credentialsProvider);
   return await repo.getIgdbCredentials();
 });
+
+final settingsProvider = AsyncNotifierProvider<SettingsNotifier, SettingsModel>(
+  SettingsNotifier.new,
+);

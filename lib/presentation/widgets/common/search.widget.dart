@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:game_launcher/core/extensions.dart';
+import 'package:game_launcher/core/providers/ui.providers.dart';
 import 'package:game_launcher/core/theme/app.spacing.dart';
 import 'package:game_launcher/presentation/widgets/filter/filter.widget.dart';
 
@@ -21,7 +21,6 @@ class _LibraryAppBarActionsState extends ConsumerState<LibraryAppBarActions> {
       isSearching = !isSearching;
       if (!isSearching) {
         searchController.clear();
-        // Reset du filtre de recherche global
         ref.read(librarySearchProvider.notifier).state = "";
       }
     });
@@ -35,6 +34,11 @@ class _LibraryAppBarActionsState extends ConsumerState<LibraryAppBarActions> {
 
   @override
   Widget build(BuildContext context) {
+    // On observe le mode d'affichage actuel
+    final displayMode = ref.watch(
+      settingsProvider.select((s) => s.value?.libraryDisplayMode ?? 'grid'),
+    );
+
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
@@ -43,7 +47,7 @@ class _LibraryAppBarActionsState extends ConsumerState<LibraryAppBarActions> {
         children: [
           if (isSearching)
             Container(
-              width: 250, // Largeur de la barre sur Desktop
+              width: 250,
               margin: const EdgeInsets.symmetric(vertical: 8),
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s),
               decoration: BoxDecoration(
@@ -61,7 +65,6 @@ class _LibraryAppBarActionsState extends ConsumerState<LibraryAppBarActions> {
                   hintStyle: TextStyle(color: Colors.white24),
                 ),
                 onChanged: (value) {
-                  // Mise à jour réactive du provider
                   ref.read(librarySearchProvider.notifier).state = value;
                 },
               ),
@@ -71,7 +74,21 @@ class _LibraryAppBarActionsState extends ConsumerState<LibraryAppBarActions> {
             tooltip: isSearching ? "Fermer" : "Rechercher",
             onPressed: _toggleSearch,
           ),
-          // Bouton Filtre
+          // Bouton pour switcher Grid / List
+          IconButton(
+            icon: Icon(
+              displayMode == 'grid'
+                  ? Icons.format_list_bulleted_rounded
+                  : Icons.grid_view_rounded,
+            ),
+            tooltip: displayMode == 'grid'
+                ? "Passer en vue liste"
+                : "Passer en vue grille",
+            onPressed: () {
+              final newMode = displayMode == 'grid' ? 'list' : 'grid';
+              ref.read(settingsProvider.notifier).toggleDisplayMode(newMode);
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.filter_list),
             onPressed: () {

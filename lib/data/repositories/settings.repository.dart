@@ -33,7 +33,7 @@ class AppSettingsRepositoryImpl implements AppSettingsRepository {
 
       if (maps.isEmpty) return AppSettings.defaultSettings();
 
-      return SettingsModel.fromDbRows(maps);
+      return SettingsModel.fromDbRows(maps).toEntity();
     } catch (e, stack) {
       AppLogger.error("SettingsRepo: Erreur de lecture", e, stack);
       return AppSettings.defaultSettings();
@@ -42,26 +42,16 @@ class AppSettingsRepositoryImpl implements AppSettingsRepository {
 
   @override
   Future<void> updateSettings(AppSettings settings) async {
-    AppLogger.info(
-      "SettingsRepo: Mise à jour des paramètres (Theme: ${settings.themeMode})...",
-    );
+    AppLogger.info("SettingsRepo: Mise à jour des paramètres...");
     try {
       final db = await dbHelper.database;
 
-      final model = SettingsModel(
-        minimizeOnLaunch: settings.minimizeOnLaunch,
-        closeOnExit: settings.closeOnExit,
-        themeMode: settings.themeMode,
-        libraryDisplayMode: settings.libraryDisplayMode,
-      );
-
+      // Utilisation de la factory pour plus de propreté
+      final model = SettingsModel.fromEntity(settings);
       final rows = model.toDbRows();
-      final batch = db.batch();
 
+      final batch = db.batch();
       for (var row in rows) {
-        AppLogger.debug(
-          "SettingsRepo: Batch préparé pour la clé: ${row['key']} = ${row['value']}",
-        );
         batch.insert(
           'app_settings',
           row,
@@ -70,15 +60,9 @@ class AppSettingsRepositoryImpl implements AppSettingsRepository {
       }
 
       await batch.commit(noResult: true);
-      AppLogger.info(
-        "SettingsRepo: Batch des paramètres appliqué avec succès.",
-      );
+      AppLogger.info("SettingsRepo: Batch appliqué avec succès.");
     } catch (e, stack) {
-      AppLogger.error(
-        "SettingsRepo: Échec lors de la mise à jour des paramètres",
-        e,
-        stack,
-      );
+      AppLogger.error("SettingsRepo: Échec de mise à jour", e, stack);
       rethrow;
     }
   }

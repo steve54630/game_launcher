@@ -18,8 +18,7 @@ class _SearchGameModalState extends ConsumerState<SearchGameModal> {
   @override
   void initState() {
     super.initState();
-    final initialTerm = ref.read(gameSearchTermProvider);
-    _controller = TextEditingController(text: initialTerm);
+    _controller = TextEditingController();
   }
 
   @override

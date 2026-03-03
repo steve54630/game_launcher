@@ -7,6 +7,7 @@ import 'package:game_launcher/core/utils/logger.dart';
 import 'package:game_launcher/presentation/myapp.page.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:media_kit/media_kit.dart';
+import 'package:window_manager/window_manager.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -15,12 +16,13 @@ Future<void> main() async {
 
   // 1. Initialisation du logger
   await AppLogger.init();
-  AppLogger.info("Lancement de l'application");
 
   if (Platform.isWindows) {
     sqfliteFfiInit();
     databaseFactory = databaseFactoryFfi;
     AppLogger.info("FFI SQLite configuré pour Windows");
+    await windowManager.ensureInitialized();
+    await windowManager.setPreventClose(true);
   }
 
   try {
@@ -32,6 +34,8 @@ Future<void> main() async {
   } catch (e) {
     AppLogger.error("Erreur lors de l'initialisation de la base : $e");
   }
+
+  AppLogger.info("Lancement de l'application");
 
   runApp(const ProviderScope(child: MyApp()));
 }
